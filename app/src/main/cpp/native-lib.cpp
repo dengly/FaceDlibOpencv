@@ -23,7 +23,7 @@ using namespace dlib;
 using namespace std;
 using namespace cv;
 
-frontal_face_detector detector = get_frontal_face_detector();
+frontal_face_detector detector = get_frontal_face_detector(); // 不使用 GPU ,依赖 CPU
 shape_predictor pose_model;//定义个shape_predictor类的实例
 
 bool initflag = false; // 初始化标记
