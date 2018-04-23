@@ -30,6 +30,8 @@ bool initflag = false; // 初始化标记
 bool showBox = true; // 是否显示人脸框
 bool showLine = false; // 是否显示人脸特征线
 
+int checkFace = 0;
+
 // 初始化
 void init(string modelpath){
     LOGE("init");
@@ -67,6 +69,35 @@ void render_face(cv::Mat &img, const dlib::full_object_detection& d) {
     draw_polyline(img, d, 48, 59, true);    // Outer lip 外唇
     draw_polyline(img, d, 60, 67, true);    // Inner lip 内唇
 
+}
+
+// 人脸检测
+template <typename T>
+void detector_face(array2d<T>& img, array2d<T>& img_small, Mat& mDisplay){
+    std::vector<dlib::rectangle> faces ;
+    faces = detector(img_small, 1); //检测人脸，获得边界框
+
+    LOGE("faces size:%d",faces.size());
+
+    // Find the pose of each face.
+//        std::vector<full_object_detection> shapes;
+    for (unsigned long i = 0; i < faces.size(); ++i){
+        full_object_detection shape = pose_model(img, faces[i]);  // 一个人的人脸特征
+//            shapes.push_back(shape);
+
+        if(showBox){
+            cv::Rect box(0, 0, 0, 0);
+            box.x = faces[i].left() * FACE_DOWNSAMPLE_RATIO;
+            box.y = faces[i].top() * FACE_DOWNSAMPLE_RATIO;
+            box.width = faces[i].width() * FACE_DOWNSAMPLE_RATIO;
+            box.height = faces[i].height() * FACE_DOWNSAMPLE_RATIO;
+            cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
+        }
+        if(showLine) {
+            // Custom Face Render
+            render_face(mDisplay, shape); //描线
+        }
+    }
 }
 
 //初始化dlib
@@ -129,7 +160,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
         cvtColor(outMat, result, CV_RGBA2BGR);
         assign_image(img, cv_image<bgr_pixel>(result));
 
-        std::vector<dlib::rectangle> dets = detector(img);
+        std::vector<dlib::rectangle> dets = detector(img, 1);
 
         int Max = 0;
         int area = 0; // 指定话大于一定面值的人脸
@@ -201,88 +232,36 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
     start = clock();
     try{
         std::vector<dlib::rectangle> faces ;
+        // Resize image for face detection
+        cv::Mat mSrc_small;
+        cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
+
         if(formatType == 1){ // rgb
-            array2d<rgb_pixel> img;
+            array2d<rgb_pixel> img, img_small;
+            assign_image(img_small, cv_image<rgb_pixel>(mSrc_small));
             assign_image(img, cv_image<rgb_pixel>(mSrc));
-            faces = detector(img); //检测人脸，获得边界框
 
-            LOGE("faces size:%d",faces.size());
+            detector_face( img, img_small, mDisplay);
 
-            // Find the pose of each face.
-//        std::vector<full_object_detection> shapes;
-            for (unsigned long i = 0; i < faces.size(); ++i){
-                full_object_detection shape = pose_model(img, faces[i]);  // 一个人的人脸特征
-//            shapes.push_back(shape);
-
-                if(showBox){
-                    cv::Rect box(0, 0, 0, 0);
-                    box.x = faces[i].left();
-                    box.y = faces[i].top();
-                    box.width = faces[i].width();
-                    box.height = faces[i].height();
-                    cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
-                }
-                if(showLine) {
-                    // Custom Face Render
-                    render_face(mDisplay, shape); //描线
-                }
-            }
         } else if(formatType == 2){ // bgr
-            array2d<bgr_pixel> img;
+            array2d<bgr_pixel> img, img_small;
+            assign_image(img_small, cv_image<bgr_pixel>(mSrc_small));
             assign_image(img, cv_image<bgr_pixel>(mSrc));
-            faces = detector(img); //检测人脸，获得边界框
 
-            LOGE("faces size:%d",faces.size());
-
-            // Find the pose of each face.
-//        std::vector<full_object_detection> shapes;
-            for (unsigned long i = 0; i < faces.size(); ++i){
-                full_object_detection shape = pose_model(img, faces[i]);  // 一个人的人脸特征
-//            shapes.push_back(shape);
-
-                if(showBox){
-                    cv::Rect box(0, 0, 0, 0);
-                    box.x = faces[i].left();
-                    box.y = faces[i].top();
-                    box.width = faces[i].width();
-                    box.height = faces[i].height();
-                    cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
-                }
-                if(showLine) {
-                    // Custom Face Render
-                    render_face(mDisplay, shape); //描线
-                }
-            }
+            detector_face( img, img_small, mDisplay);
 
         }else if(formatType == 3){ // gray
-            array2d<rgb_pixel> img;
-            Mat result ;
+            array2d<rgb_pixel> img, img_small;
+            Mat result, result_small ;
+            cvtColor(mSrc_small, result_small, CV_GRAY2RGB);
+            assign_image(img_small, cv_image<rgb_pixel>(result_small));
+
+            assign_image(img, cv_image<rgb_pixel>(mSrc));
             cvtColor(mSrc, result, CV_GRAY2RGB);
-            assign_image(img, cv_image<rgb_pixel>(result));
+            assign_image(img_small, cv_image<rgb_pixel>(result));
 
-            faces = detector(img); //检测人脸，获得边界框
+            detector_face( img, img_small, mDisplay);
 
-            LOGE("faces size:%d",faces.size());
-
-            // Find the pose of each face.
-//        std::vector<full_object_detection> shapes;
-            for (unsigned long i = 0; i < faces.size(); ++i){
-                full_object_detection shape = pose_model(img, faces[i]);  // 一个人的人脸特征
-//            shapes.push_back(shape);
-
-                if(showBox){
-                    cv::Rect box(0, 0, 0, 0);
-                    box.x = faces[i].left();
-                    box.y = faces[i].top();
-                    box.width = faces[i].width();
-                    box.height = faces[i].height();
-                    cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
-                }
-                if(showLine) {
-                    // Custom Face Render
-                    render_face(mDisplay, shape); //描线
-                }
-            }
         }
         str = "Success";
     } catch (const std::exception &e) {
@@ -317,7 +296,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
         array2d<rgb_pixel> img;
         assign_image(img, cv_image<rgb_pixel>(mRgb));
 
-        std::vector<dlib::rectangle> faces = detector(img); //检测人脸，获得边界框
+        std::vector<dlib::rectangle> faces = detector(img, 1); //检测人脸，获得边界框
 
         LOGE("faces size:%d",faces.size());
 
