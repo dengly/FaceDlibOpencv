@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public void onResume() {
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, baseLoaderCallback);
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, baseLoaderCallback);
         } else {
             baseLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
@@ -137,11 +137,19 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         }
 
         if(initflag){
+            // FpsMeter: 4.81
             mRgb = inputFrame.rgb();
             mDisplay = mRgb;
             Face.landMarks1(mRgb.getNativeObjAddr(),1,mDisplay.getNativeObjAddr());
 
-            // 检测时间平均4秒左右
+
+            // FpsMeter: 4.67
+//            mBgr = inputFrame.bgr();
+//            mRgb = inputFrame.rgb();
+//            mDisplay = mRgb;
+//            Face.landMarks1(mBgr.getNativeObjAddr(),2,mDisplay.getNativeObjAddr());
+
+            // FpsMeter: 4.89
 //            mGray = inputFrame.gray();
 //            mRgba = inputFrame.rgba();
 //            mDisplay = mRgba;

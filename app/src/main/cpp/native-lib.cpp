@@ -29,12 +29,14 @@ shape_predictor pose_model;//定义个shape_predictor类的实例
 bool initflag = false; // 初始化标记
 bool showBox = true; // 是否显示人脸框
 bool showLine = false; // 是否显示人脸特征线
+bool useCNN = false; // 是否使用卷积神经网络（CNN）
+float threshold = 0.54 ; //人脸识别的阈值
 
 int checkFace = 0;
 
 // 初始化
 void init(string modelpath){
-    LOGE("init");
+    LOGD("init");
     // modelpath 是 shape_predictor_68_face_landmarks.dat 的文件路径
 //    string model = modelpath + "/model/shape_predictor_68_face_landmarks.dat";
     deserialize(modelpath) >> pose_model; //读入标记点文件
@@ -44,10 +46,9 @@ void init(string modelpath){
 void draw_polyline(cv::Mat &img, const dlib::full_object_detection& d, const int start, const int end, bool isClosed = false) {
     std::vector<cv::Point> points;
     for (int i = start; i <= end; ++i) {
-        points.push_back(cv::Point(d.part(i).x(), d.part(i).y()));
+        points.push_back(cv::Point(d.part(i).x() * FACE_DOWNSAMPLE_RATIO * 1.0 , d.part(i).y() * FACE_DOWNSAMPLE_RATIO * 1.0 ));
     }
     cv::polylines(img, points, isClosed, cv::Scalar(255,0,0), 2, 16);
-
 }
 
 // 脸部渲染器
@@ -77,7 +78,7 @@ void detector_face(array2d<T>& img, array2d<T>& img_small, Mat& mDisplay){
     std::vector<dlib::rectangle> faces ;
     faces = detector(img_small, 1); //检测人脸，获得边界框
 
-    LOGE("faces size:%d",faces.size());
+    LOGI("faces size:%d",faces.size());
 
     // Find the pose of each face.
 //        std::vector<full_object_detection> shapes;
@@ -111,7 +112,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initModel
     }
     string MPath = modelPath;
 
-    LOGE("initModel");
+    LOGD("initModel");
     try {
         if(!initflag){
             init(MPath);
@@ -145,7 +146,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
     Mat& outMat = *(Mat*)outPtr;
     outMat = inMat;
 
-    LOGE("jnidetect");
+    LOGD("jnidetect");
 
     long start, finish;
     double totaltime;
@@ -195,7 +196,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
 
     finish = clock();
     totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
-    LOGE("time = %f\n", totaltime*1000);
+    LOGD("detector face time = %f\n", totaltime*1000);
     string str = "Fail";
     if(pts2d.size() == 68){
         if(showBox){
@@ -224,7 +225,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
     int formatType = (int)format;
     Mat& mDisplay = *(Mat*) displayAddr;
 
-    LOGE("jnidetect");
+    LOGD("jnidetect");
 
     long start, finish;
     double totaltime;
@@ -253,12 +254,11 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
         }else if(formatType == 3){ // gray
             array2d<rgb_pixel> img, img_small;
             Mat result, result_small ;
+
             cvtColor(mSrc_small, result_small, CV_GRAY2RGB);
             assign_image(img_small, cv_image<rgb_pixel>(result_small));
-
-            assign_image(img, cv_image<rgb_pixel>(mSrc));
             cvtColor(mSrc, result, CV_GRAY2RGB);
-            assign_image(img_small, cv_image<rgb_pixel>(result));
+            assign_image(img, cv_image<rgb_pixel>(result));
 
             detector_face( img, img_small, mDisplay);
 
@@ -272,7 +272,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
 
     finish = clock();
     totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
-    LOGE("time = %f\n", totaltime*1000);
+    LOGD("detector face time = %f\n", totaltime*1000);
 
     const char* ret = str.c_str();
     return env->NewStringUTF(ret);
@@ -286,7 +286,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
     Mat& mRgb = *(Mat*) rgbAddr;
     Mat& mDisplay = *(Mat*) displayAddr;
 
-    LOGE("jnidetect");
+    LOGD("jnidetect");
 
     long start, finish;
     double totaltime;
@@ -298,7 +298,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
 
         std::vector<dlib::rectangle> faces = detector(img, 1); //检测人脸，获得边界框
 
-        LOGE("faces size:%d",faces.size());
+        LOGI("faces size:%d",faces.size());
 
         // Find the pose of each face.
 //        std::vector<full_object_detection> shapes;
@@ -328,7 +328,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
 
     finish = clock();
     totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
-    LOGE("time = %f\n", totaltime*1000);
+    LOGD("detector face time = %f\n", totaltime*1000);
 
     const char* ret = str.c_str();
     return env->NewStringUTF(ret);
