@@ -6,7 +6,10 @@
 
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/image_processing.h>
+#include <dlib/image_io.h>
 #include <dlib/opencv/cv_image.h>
+#include <dlib/dnn.h>
+#include <dlib/clustering.h>
 
 #define TAG "Dlib-jni" // 这个是自定义的LOG的标识
 #define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, TAG, __VA_ARGS__)  // 定义LOGV类型
@@ -23,23 +26,82 @@ using namespace dlib;
 using namespace std;
 using namespace cv;
 
+// ----------------------------------------------------------------------------------------
+
+template <template <int, template<typename>class, int, typename> class block, int N, template<typename>class BN, typename SUBNET>
+using residual = add_prev1<block<N, BN, 1, tag1<SUBNET>>>;
+
+template <template <int, template<typename>class, int, typename> class block, int N, template<typename>class BN, typename SUBNET>
+using residual_down = add_prev2<avg_pool<2, 2, 2, 2, skip1<tag2<block<N, BN, 2, tag1<SUBNET>>>>>>;
+
+template <int N, template <typename> class BN, int stride, typename SUBNET>
+using block = BN<con<N, 3, 3, 1, 1, relu<BN<con<N, 3, 3, stride, stride, SUBNET>>>>>;
+
+template <int N, typename SUBNET> using ares = relu<residual<block, N, affine, SUBNET>>;
+template <int N, typename SUBNET> using ares_down = relu<residual_down<block, N, affine, SUBNET>>;
+
+template <typename SUBNET> using alevel0 = ares_down<256, SUBNET>;
+template <typename SUBNET> using alevel1 = ares<256, ares<256, ares_down<256, SUBNET>>>;
+template <typename SUBNET> using alevel2 = ares<128, ares<128, ares_down<128, SUBNET>>>;
+template <typename SUBNET> using alevel3 = ares<64, ares<64, ares<64, ares_down<64, SUBNET>>>>;
+template <typename SUBNET> using alevel4 = ares<32, ares<32, ares<32, SUBNET>>>;
+
+using anet_type = loss_metric<fc_no_bias<128, avg_pool_everything<alevel0<alevel1<alevel2<alevel3<alevel4<max_pool<3, 3, 2, 2, relu<affine<con<32, 7, 7, 2, 2,input_rgb_image_sized<150>>>>>>>>>>>>>;
+
+template <long num_filters, typename SUBNET> using con5d = con<num_filters, 5, 5, 2, 2, SUBNET>;
+template <long num_filters, typename SUBNET> using con5  = con<num_filters, 5, 5, 1, 1, SUBNET>;
+
+template <typename SUBNET> using downsampler  = relu<affine<con5d<32, relu<affine<con5d<32, relu<affine<con5d<16, SUBNET>>>>>>>>>;
+template <typename SUBNET> using rcon5  = relu<affine<con5<45, SUBNET>>>;
+
+using net_type = loss_mmod<con<1, 9, 9, 1, 1, rcon5<rcon5<rcon5<downsampler<input_rgb_image_pyramid<pyramid_down<6>>>>>>>>;
+
+// ----------------------------------------------------------------------------------------
+
 frontal_face_detector detector = get_frontal_face_detector(); // 不使用 GPU ,依赖 CPU
 shape_predictor pose_model;//定义个shape_predictor类的实例
 
-bool initflag = false; // 初始化标记
+net_type net_humanFace; // 用于人脸检测
+anet_type net_faceRecognition; // 用户人脸识别
+
+bool initflag_faceLandmarks68 = false; // 68点人脸标记模型初始化标记
+bool initflag_faceLandmarks5 = false; // 5点人脸标记模型初始化标记
+bool initflag_humanFace = false; // 人脸模型初始化标记
+bool initflag_faceRecognitionV1 = false; // 人脸识别模型初始化标记
 bool showBox = true; // 是否显示人脸框
 bool showLine = false; // 是否显示人脸特征线
 bool useCNN = false; // 是否使用卷积神经网络（CNN）
-float threshold = 0.54 ; //人脸识别的阈值
+float myThreshold = 0.6 ; //人脸识别的决策阈值
 
 int checkFace = 0;
 
+std::vector<matrix<float, 0, 1>> face_descriptors_db;
+
+// ----------------------------------------------------------------------------------------
+
 // 初始化
-void init(string modelpath){
-    LOGD("init");
-    // modelpath 是 shape_predictor_68_face_landmarks.dat 的文件路径
-//    string model = modelpath + "/model/shape_predictor_68_face_landmarks.dat";
-    deserialize(modelpath) >> pose_model; //读入标记点文件
+void initFaceLandmarks68Model(string faceLandmarks68Modelpath){
+    deserialize(faceLandmarks68Modelpath) >> pose_model; // 68点人脸标记模型 shape_predictor_68_face_landmarks.dat
+}
+void initFaceLandmarks5Model(string faceLandmarks5Modelpath){
+    deserialize(faceLandmarks5Modelpath) >> pose_model; // 5点人脸标记模型 shape_predictor_5_face_landmarks.dat
+}
+void initHumanFaceModel(string humanFaceModelpath){
+    deserialize(humanFaceModelpath) >> net_humanFace; // 人脸检测模型 mmod_human_face_detector.dat
+}
+void initFaceRecognitionV1Model(string faceRecognitionV1ModelPath){
+    deserialize(faceRecognitionV1ModelPath) >> net_faceRecognition;
+}
+
+// 人脸识别的抖动计算 可以提高面部识别精度 但会影响速度
+std::vector<matrix<rgb_pixel>> jitter_image(const matrix<rgb_pixel>& img) {
+    thread_local dlib::rand rnd;
+
+    std::vector<matrix<rgb_pixel>> crops;
+    for (int i = 0; i < 100; ++i)
+        crops.push_back(jitter_image(img,rnd));
+
+    return crops;
 }
 
 // 画线
@@ -81,10 +143,10 @@ void detector_face(array2d<T>& img, array2d<T>& img_small, Mat& mDisplay){
     LOGI("faces size:%d",faces.size());
 
     // Find the pose of each face.
-//        std::vector<full_object_detection> shapes;
+//    std::vector<full_object_detection> shapes;
     for (unsigned long i = 0; i < faces.size(); ++i){
         full_object_detection shape = pose_model(img, faces[i]);  // 一个人的人脸特征
-//            shapes.push_back(shape);
+//        shapes.push_back(shape);
 
         if(showBox){
             cv::Rect box(0, 0, 0, 0);
@@ -98,33 +160,58 @@ void detector_face(array2d<T>& img, array2d<T>& img_small, Mat& mDisplay){
             // Custom Face Render
             render_face(mDisplay, shape); //描线
         }
+
     }
+//    if(faces.size() > 0) {
+//        net_faceRecognition(shapes);
+//    }
 }
 
 //初始化dlib
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initModel
-        (JNIEnv *env, jclass jobject,jstring path) {
+        (JNIEnv *env, jclass jobject, jstring path, jint type) {
     //获取绝对路径
-    const char* modelPath;
-    modelPath = env->GetStringUTFChars(path, 0);
-    if(modelPath == NULL) {
+    const char * modelpath = env->GetStringUTFChars(path, 0);
+    if(modelpath == NULL) {
         return 0;
     }
-    string MPath = modelPath;
+    string modelpathStr = modelpath;
 
     LOGD("initModel");
     try {
-        if(!initflag){
-            init(MPath);
-            initflag = true;
-            return 1;
+        if(type == 0){ // 5点人脸标记模型
+            if(!initflag_faceLandmarks5){
+                LOGD("initFaceLandmarks5Model");
+                initFaceLandmarks5Model(modelpathStr);
+                initflag_faceLandmarks5 = true;
+                return 1;
+            }
+        }else if(type == 1){ // 68点人脸标记模型
+            if(!initflag_faceLandmarks68){
+                LOGD("initFaceLandmarks68Model");
+                initFaceLandmarks68Model(modelpathStr);
+                initflag_faceLandmarks68 = true;
+                return 1;
+            }
+        }else if(type == 2){ // 人脸模型
+            if(!initflag_humanFace){
+                LOGD("initHumanFaceModel");
+                initHumanFaceModel(modelpathStr);
+                initflag_humanFace = true;
+                return 1;
+            }
+        }else if(type == 3){ // 人脸识别模型
+            if(!initflag_faceRecognitionV1){
+                LOGD("initFaceRecognitionV1Model");
+                initFaceRecognitionV1Model(modelpathStr);
+                initflag_faceRecognitionV1 = true;
+                return 1;
+            }
         }
-
     } catch (const std::exception &e) {
-
     } catch (...) {
-
     }
+    env->ReleaseStringUTFChars(path, modelpath);
     return 0;
 }
 
@@ -142,6 +229,12 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_showLandMarks
 
 JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
         (JNIEnv * env, jclass jobject, jlong intPtr, jlong outPtr){
+    string str = "Fail";
+    if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
+        LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
+        const char* ret = str.c_str();
+        return env->NewStringUTF(ret);
+    }
     Mat& inMat = *(Mat*)intPtr;
     Mat& outMat = *(Mat*)outPtr;
     outMat = inMat;
@@ -197,7 +290,6 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
     finish = clock();
     totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
     LOGD("detector face time = %f\n", totaltime*1000);
-    string str = "Fail";
     if(pts2d.size() == 68){
         if(showBox){
             cv::rectangle(outMat, box, Scalar(255, 0, 0), 2, 8, 0);
@@ -221,6 +313,12 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
 
 JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
         (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ) {
+    string str = "Fail";
+    if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
+        LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
+        const char* ret = str.c_str();
+        return env->NewStringUTF(ret);
+    }
     Mat& mSrc = *(Mat*) srcAAddr;
     int formatType = (int)format;
     Mat& mDisplay = *(Mat*) displayAddr;
@@ -229,10 +327,8 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
 
     long start, finish;
     double totaltime;
-    string str = "Fail";
     start = clock();
     try{
-        std::vector<dlib::rectangle> faces ;
         // Resize image for face detection
         cv::Mat mSrc_small;
         cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
@@ -280,6 +376,12 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
 
 JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
         (JNIEnv *env, jclass jobject, jlong rgbaAAddr, jlong grayAddr, jlong bgrAddr, jlong rgbAddr, jlong displayAddr ) {
+    string str = "Fail";
+    if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
+        LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
+        const char* ret = str.c_str();
+        return env->NewStringUTF(ret);
+    }
     Mat& mRgba = *(Mat*) rgbaAAddr;
     Mat& mGray = *(Mat*) grayAddr;
     Mat& mBgr = *(Mat*) bgrAddr;
@@ -290,7 +392,6 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
 
     long start, finish;
     double totaltime;
-    string str = "Fail";
     start = clock();
     try{
         array2d<rgb_pixel> img;
@@ -332,4 +433,159 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
 
     const char* ret = str.c_str();
     return env->NewStringUTF(ret);
+}
+
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
+        (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ){
+    if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
+        LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
+        return 0;
+    }
+    Mat& mSrc = *(Mat*) srcAAddr;
+    int formatType = (int)format;
+    Mat& mDisplay = *(Mat*) displayAddr;
+
+    LOGD("jnidetect");
+
+    long start, finish;
+    double totaltime;
+    start = clock();
+
+    int found=0;
+    try{
+        // Resize image for face detection
+        cv::Mat mSrc_small;
+        cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
+
+        matrix<rgb_pixel> img, img_small;
+        if(formatType == 1){ // rgb
+            assign_image(img_small, cv_image<rgb_pixel>(mSrc_small));
+            assign_image(img, cv_image<rgb_pixel>(mSrc));
+        } else if(formatType == 2){ // bgr
+            Mat result, result_small ;
+            cvtColor(mSrc_small, result_small, CV_BGR2RGB);
+            assign_image(img_small, cv_image<rgb_pixel>(result_small));
+            cvtColor(mSrc, result, CV_BGR2RGB);
+            assign_image(img, cv_image<rgb_pixel>(result));
+        }else if(formatType == 3){ // gray
+            Mat result, result_small ;
+            cvtColor(mSrc_small, result_small, CV_GRAY2RGB);
+            assign_image(img_small, cv_image<rgb_pixel>(result_small));
+            cvtColor(mSrc, result, CV_GRAY2RGB);
+            assign_image(img, cv_image<rgb_pixel>(result));
+        }
+
+        std::vector<matrix<rgb_pixel>> faces;
+        for (auto face : detector(img_small, 1)) {
+            auto shape = pose_model(img, face); // 一个人的人脸特征
+            matrix<rgb_pixel> face_chip;
+            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
+            faces.push_back(move(face_chip));
+        }
+
+        if (faces.size() > 0){
+            std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
+
+            if (face_descriptors.size() < 1) {
+                LOGI("获取人脸特征失败");
+            } else {
+                LOGI("获取到人脸特征数:%d",face_descriptors.size());
+            }
+
+            size_t i = 0, j = 0;
+            for (; i < face_descriptors.size(); ++i) {
+                for (; j < face_descriptors_db.size(); ++j) {
+                    if (length(face_descriptors[i]-face_descriptors_db[j]) < myThreshold){
+                        found=1;
+                        break;
+                    }
+                }
+            }
+            if(found==0){
+                LOGI("找不到库里的人");
+            }else{
+                LOGI("找到库里的人 哈哈哈");
+            }
+        }
+
+    } catch (const std::exception &e) {
+
+    } catch (...) {
+
+    }
+
+    finish = clock();
+    totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
+    LOGD("face recognition time = %f\n", totaltime*1000);
+
+    return found;
+}
+
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initFaceDescriptors
+        (JNIEnv *env, jclass jobject, jstring path){
+    //获取绝对路径
+    const char * facesPath = env->GetStringUTFChars(path, 0);
+    if(facesPath == NULL) {
+        return 0;
+    }
+
+    try{
+        std::vector<matrix<rgb_pixel>> faces;
+
+        DIR *pDir = NULL;
+        struct dirent *dmsg;
+        char szFileName[128];
+        char szFolderName[128];
+
+        strcpy(szFolderName, facesPath);
+        strcat(szFolderName, "/%s");
+        if ((pDir = opendir(facesPath)) != NULL) {
+            // 遍历目录并删除文件
+            while ((dmsg = readdir(pDir)) != NULL) {
+                if (strcmp(dmsg->d_name, ".") != 0 && strcmp(dmsg->d_name, "..") != 0) {
+                    sprintf(szFileName, szFolderName, dmsg->d_name);
+                    remove(szFileName);
+
+                    if (!strcmp(strstr(szFileName, ".") + 1 , "jpg")){
+                        matrix<rgb_pixel> img;
+                        char path[260];
+                        string fileName = szFileName;
+                        load_image(img, fileName);
+
+                        for (auto face : detector(img, 1)) {
+                            auto shape = pose_model(img, face); // 一个人的人脸特征
+                            matrix<rgb_pixel> face_chip;
+                            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
+                            faces.push_back(move(face_chip));
+                        }
+
+                        if (faces.size() > 0){
+                            std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
+
+                            for(auto item : face_descriptors) {
+                                face_descriptors_db.push_back(item);
+                            }
+
+                            if (face_descriptors_db.size() < 1) {
+                                LOGI("获取人脸特征失败");
+                            } else {
+                                LOGI("获取到人脸特征数:%d",face_descriptors_db.size());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (pDir != NULL) {
+            closedir(pDir);
+        }
+        env->ReleaseStringUTFChars(path, facesPath);
+        return 1;
+    } catch (const std::exception &e) {
+
+    } catch (...) {
+
+    }
+    return 0;
 }

@@ -9,10 +9,10 @@ extern "C" {
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    initModel
- * Signature: (Ljava/lang/String;)F
+ * Signature: (Ljava/lang/String;F)F
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initModel
-        (JNIEnv *, jclass, jstring);
+        (JNIEnv *, jclass, jstring, jint);
 
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
@@ -29,14 +29,6 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_showBox
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_showLandMarks
         (JNIEnv *, jclass, jint);
-
-/*
- * Class:     com_zzwtec_facedlibopencv_Face
- * Method:    initModel
- * Signature: (Ljava/lang/String;)F
- */
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initModel
-        (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
@@ -62,6 +54,21 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
 JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
         (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     com_zzwtec_facedlibopencv_Face
+ * Method:    faceRecognition
+ * Signature: (JFJ)F
+ */
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
+        (JNIEnv *, jclass, jlong, jint, jlong );
+
+/*
+ * Class:     com_zzwtec_facedlibopencv_Face
+ * Method:    initFaceDescriptors
+ * Signature: (Ljava/lang/String;)F
+ */
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initFaceDescriptors
+        (JNIEnv *, jclass, jstring);
 
 #ifdef __cplusplus
 }

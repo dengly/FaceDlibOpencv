@@ -11,17 +11,14 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
-import java.io.File;
-
 public class ImageActivity extends Activity {
 
-    private Button bt;
+    private Button bt, videoBt, videoRecognitionBt;
     private ImageView img;
     private Bitmap srcBitmap;
     private Handler mHandler;
@@ -52,11 +49,23 @@ public class ImageActivity extends Activity {
 
         final Context mContext = getApplicationContext();
 
-        Button videoBt = (Button) findViewById(R.id.video_button);
+        videoBt = (Button) findViewById(R.id.video_button);
         videoBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(mContext, MainActivity.class));
+                Intent intent = new Intent(mContext, MainActivity.class);
+                intent.putExtra("type",1); // 人脸检测
+                startActivity(intent);
+            }
+        });
+
+        videoRecognitionBt = (Button) findViewById(R.id.video_recognition_button);
+        videoRecognitionBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, MainActivity.class);
+                intent.putExtra("type",2); // 人脸识别
+                startActivity(intent);
             }
         });
 
@@ -68,17 +77,29 @@ public class ImageActivity extends Activity {
             }
         });
 
-        final String targetPath = Constants.getFaceShapeModelPath();
-        if (!new File(targetPath).exists()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG,"Copy landmark model to " + targetPath);
-                    Toast.makeText(ImageActivity.this, "Copy landmark model to " + targetPath, Toast.LENGTH_SHORT).show();
-                }
-            });
-            FileUtils.copyFileFromAssetsToOthers(getApplicationContext(), "shape_predictor_68_face_landmarks.dat", targetPath);
-        }
+        bt.setVisibility(View.GONE);
+        videoBt.setVisibility(View.GONE);
+        videoRecognitionBt.setVisibility(View.GONE);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG,"copy file ...");
+                Face.FaceModelFileUtils.copyFaceRecognitionV1ModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyFaceShape5ModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyFaceShape68ModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyHumanFaceModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyFacePicFile(getApplicationContext());
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        bt.setVisibility(View.VISIBLE);
+                        videoBt.setVisibility(View.VISIBLE);
+                        videoRecognitionBt.setVisibility(View.VISIBLE);
+                    }
+                });
+                Log.d(TAG,"copy file over");
+            }
+        }).start();
     }
 
     //68点检测
@@ -86,7 +107,7 @@ public class ImageActivity extends Activity {
         new Thread(new Runnable() {
             public void run() {
                 if (!initflag) {
-                    Face.initModel(Constants.getFaceShapeModelPath());
+                    Face.initModel(Constants.getFaceShape68ModelPath(),1);
                     initflag = true;
                 }
                 long detectStime =System.currentTimeMillis();

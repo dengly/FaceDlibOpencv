@@ -1,5 +1,6 @@
 package com.zzwtec.facedlibopencv;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -8,7 +9,6 @@ import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -16,8 +16,6 @@ import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
-
-import java.io.File;
 
 public class MainActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -32,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private Mat mBgr;
     private Mat mDisplay;
 
-    private int mWidth, mHeight;
+    private int mWidth, mHeight, type = 1;
 
     private Bitmap mCacheBitmap;
 
@@ -72,17 +70,32 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
         });
 
-        final String targetPath = Constants.getFaceShapeModelPath();
-        if (!new File(targetPath).exists()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG,"Copy landmark model to " + targetPath);
-                    Toast.makeText(MainActivity.this, "Copy landmark model to " + targetPath, Toast.LENGTH_SHORT).show();
-                }
-            });
-            FileUtils.copyFileFromAssetsToOthers(getApplicationContext(), "shape_predictor_68_face_landmarks.dat", targetPath);
+        //取得从上一个Activity当中传递过来的Intent对象
+        Intent intent = getIntent();
+        //从Intent当中根据key取得value
+        if (intent != null) {
+            type = intent.getIntExtra("type",1);
         }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(!initflag){
+                    if(type == 1){ // 人脸检测
+                        // FpsMeter: 5.20
+//                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
+
+                        // FpsMeter: 4.7
+                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
+                    }else{ // 人脸识别
+                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
+                        Face.initFaceDescriptors(Constants.getFacePicDirectoryPath());
+                    }
+
+                    initflag = true;
+                }
+            }
+        }).start();
     }
 
     @Override
@@ -131,29 +144,30 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         Log.d(TAG, "MainActivity onCameraFrame");
 
-        if(!initflag){
-            Face.initModel(Constants.getFaceShapeModelPath());
-            initflag = true;
-        }
-
         if(initflag){
-            // FpsMeter: 4.81
-            mRgb = inputFrame.rgb();
-            mDisplay = mRgb;
-            Face.landMarks1(mRgb.getNativeObjAddr(),1,mDisplay.getNativeObjAddr());
+            if(type == 1){ // 人脸检测
+                // FpsMeter: 4.81
+                mRgb = inputFrame.rgb();
+                mDisplay = mRgb;
+                Face.landMarks1(mRgb.getNativeObjAddr(),1,mDisplay.getNativeObjAddr());
 
 
-            // FpsMeter: 4.67
+                // FpsMeter: 4.67
 //            mBgr = inputFrame.bgr();
 //            mRgb = inputFrame.rgb();
 //            mDisplay = mRgb;
 //            Face.landMarks1(mBgr.getNativeObjAddr(),2,mDisplay.getNativeObjAddr());
 
-            // FpsMeter: 4.89
+                // FpsMeter: 4.89
 //            mGray = inputFrame.gray();
 //            mRgba = inputFrame.rgba();
 //            mDisplay = mRgba;
 //            Face.landMarks1(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+            }else{ // 人脸识别
+                mRgb = inputFrame.rgb();
+                mDisplay = mRgb;
+                Face.faceRecognition(mRgb.getNativeObjAddr(),1,mDisplay.getNativeObjAddr());
+            }
 
             return mDisplay;
 
