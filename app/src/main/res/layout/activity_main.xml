@@ -8,7 +8,6 @@
         android:id="@+id/javaCameraView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:camera_id="back"
         app:show_fps="true" />
 
 </LinearLayout>

@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         javaCameraView = (JavaCameraView) findViewById(R.id.javaCameraView);
         javaCameraView.setVisibility(SurfaceView.VISIBLE);
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
+//        javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK); // 设置打开后置摄像头
         javaCameraView.setCvCameraViewListener(this);
         javaCameraView.setClickable(true);
         javaCameraView.setOnClickListener(new View.OnClickListener() {
@@ -83,12 +84,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 if(!initflag){
                     if(type == 1){ // 人脸检测
                         // FpsMeter: 5.20
-//                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
+                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
 
                         // FpsMeter: 4.7
-                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
+//                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
                     }else{ // 人脸识别
-                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
+                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
+//                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
+
+                        Face.initModel(Constants.getFaceRecognitionV1ModelPath(),3);
                         Face.initFaceDescriptors(Constants.getFacePicDirectoryPath());
                     }
 

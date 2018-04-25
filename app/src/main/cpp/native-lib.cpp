@@ -289,7 +289,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
 
     finish = clock();
     totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
-    LOGD("detector face time = %f\n", totaltime*1000);
+    LOGD("detector face time = %f ms\n", totaltime*1000);
     if(pts2d.size() == 68){
         if(showBox){
             cv::rectangle(outMat, box, Scalar(255, 0, 0), 2, 8, 0);
@@ -368,7 +368,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
 
     finish = clock();
     totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
-    LOGD("detector face time = %f\n", totaltime*1000);
+    LOGD("detector face time = %f ms\n", totaltime*1000);
 
     const char* ret = str.c_str();
     return env->NewStringUTF(ret);
@@ -429,7 +429,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
 
     finish = clock();
     totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
-    LOGD("detector face time = %f\n", totaltime*1000);
+    LOGD("detector face time = %f ms\n", totaltime*1000);
 
     const char* ret = str.c_str();
     return env->NewStringUTF(ret);
@@ -446,10 +446,6 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
     Mat& mDisplay = *(Mat*) displayAddr;
 
     LOGD("jnidetect");
-
-    long start, finish;
-    double totaltime;
-    start = clock();
 
     int found=0;
     try{
@@ -475,14 +471,30 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
             assign_image(img, cv_image<rgb_pixel>(result));
         }
 
+        long start_detector, start_recognition, finish;
+        double totaltime_detector,totaltime_recognition;
+
+        start_detector = clock();
+        cv::Rect box(0, 0, 0, 0);
         std::vector<matrix<rgb_pixel>> faces;
         for (auto face : detector(img_small, 1)) {
             auto shape = pose_model(img, face); // 一个人的人脸特征
             matrix<rgb_pixel> face_chip;
             extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
             faces.push_back(move(face_chip));
-        }
 
+            if(showBox) {
+                box.x = face.left() * FACE_DOWNSAMPLE_RATIO;
+                box.y = face.top() * FACE_DOWNSAMPLE_RATIO;
+                box.width = face.width() * FACE_DOWNSAMPLE_RATIO;
+                box.height = face.height() * FACE_DOWNSAMPLE_RATIO;
+                cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
+            }
+        }
+        finish = clock();
+        totaltime_detector = (double)(finish - start_detector) / CLOCKS_PER_SEC;
+        LOGI("\nface detector time = %f ms\n", totaltime_detector*1000);
+        start_recognition = clock();
         if (faces.size() > 0){
             std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
 
@@ -492,31 +504,40 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
                 LOGI("获取到人脸特征数:%d",face_descriptors.size());
             }
 
+            LOGI("--------------- 库的人脸特征数:%d",face_descriptors_db.size());
+
             size_t i = 0, j = 0;
+            float thisThreshold;
             for (; i < face_descriptors.size(); ++i) {
                 for (; j < face_descriptors_db.size(); ++j) {
-                    if (length(face_descriptors[i]-face_descriptors_db[j]) < myThreshold){
+                    thisThreshold = length(face_descriptors[i]-face_descriptors_db[j]);
+                    LOGI("--------------- 比对值:%f",thisThreshold);
+                    if (thisThreshold < myThreshold){
                         found=1;
                         break;
                     }
                 }
             }
             if(found==0){
+                cv::putText(mDisplay, to_string(thisThreshold), cv::Point(box.x,box.y-2), cv::FONT_HERSHEY_SIMPLEX, 1, Scalar(181, 127, 255), 2, cv::LINE_AA);
                 LOGI("找不到库里的人");
             }else{
+                // putText( InputOutputArray img, const String& text, Point org, int fontFace, double fontScale, Scalar color, int thickness = 1, int lineType = LINE_8, bool bottomLeftOrigin = false )
+                cv::putText(mDisplay, "dly " + to_string(thisThreshold), cv::Point(box.x,box.y-2), cv::FONT_HERSHEY_SIMPLEX, 1, Scalar(181, 127, 255), 2, cv::LINE_AA);
                 LOGI("找到库里的人 哈哈哈");
             }
         }
+        finish = clock();
+        totaltime_recognition = (double)(finish - start_recognition) / CLOCKS_PER_SEC;
+        LOGI("face recognition time = %f ms\n", totaltime_recognition*1000);
+
+        LOGI("all time = %f ms\n", (totaltime_detector + totaltime_recognition)*1000);
 
     } catch (const std::exception &e) {
 
     } catch (...) {
 
     }
-
-    finish = clock();
-    totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
-    LOGD("face recognition time = %f\n", totaltime*1000);
 
     return found;
 }
@@ -544,7 +565,6 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initFaceDescriptors
             while ((dmsg = readdir(pDir)) != NULL) {
                 if (strcmp(dmsg->d_name, ".") != 0 && strcmp(dmsg->d_name, "..") != 0) {
                     sprintf(szFileName, szFolderName, dmsg->d_name);
-                    remove(szFileName);
 
                     if (!strcmp(strstr(szFileName, ".") + 1 , "jpg")){
                         matrix<rgb_pixel> img;
@@ -567,9 +587,9 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initFaceDescriptors
                             }
 
                             if (face_descriptors_db.size() < 1) {
-                                LOGI("获取人脸特征失败");
+                                LOGI("initFaceDescriptors 获取人脸特征失败");
                             } else {
-                                LOGI("获取到人脸特征数:%d",face_descriptors_db.size());
+                                LOGI("initFaceDescriptors 获取到人脸特征数:%d",face_descriptors_db.size());
                             }
                         }
                     }
