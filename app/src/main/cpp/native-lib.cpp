@@ -528,6 +528,90 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
 }
 
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
+        (JNIEnv *, jclass, jlong srcAAddr, jlong displayAddr){
+    if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
+        LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
+        return 0;
+    }
+    if(!initflag_faceRecognitionV1){
+        LOGE("没有初始化 人脸识别模型");
+        return 0;
+    }
+    showBox=true;
+    Mat& mSrc = *(Mat*) srcAAddr;
+    Mat& mDisplay = *(Mat*) displayAddr;
+
+    LOGD("jnidetect");
+
+    int found=0;
+    try{
+        // Resize image for face detection
+        matrix<unsigned char> img; // greyscale
+        assign_image(img, cv_image<rgb_pixel>(mSrc));
+
+        long start_detector=0.0, start_recognition=0.0, finish=0.0;
+        double totaltime_detector=0.0,totaltime_recognition=0.0;
+
+        start_detector = clock();
+        std::vector<cv::Rect> boxes;
+        std::vector<matrix<rgb_pixel>> faces; //
+        for (auto face : detector(img, 1)) { // 人脸检测
+            auto shape = pose_model(img, face); // 提取人脸特征
+            matrix<rgb_pixel> face_chip;
+            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip); // 提取裁剪 直立旋转和缩放至标准尺寸的每张脸的副本
+            faces.push_back(move(face_chip));
+
+            if(showBox) {
+                cv::Rect box(0,0,0,0);
+                box.x = face.left();
+                box.y = face.top();
+                box.width = face.width();
+                box.height = face.height();
+                boxes.push_back(box);
+                cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
+            }
+        }
+        finish = clock();
+        totaltime_detector = (double)(finish - start_detector) / CLOCKS_PER_SEC;
+        LOGI("\nface detector time = %f ms\n", totaltime_detector*1000);
+        if (faces.size() > 0){
+            start_recognition = clock();
+            std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
+
+            if (face_descriptors.size() < 1) {
+                LOGI("获取人脸特征失败 \n");
+            } else {
+                LOGI("获取到人脸特征数:%d \n",face_descriptors.size());
+            }
+
+            for (size_t i = 0; i < face_descriptors.size(); ++i) {
+                for (size_t j = i+1; j < face_descriptors.size(); ++j) {
+                    auto thisThreshold = length(face_descriptors[i]-face_descriptors[j]); // 比对结果是一个距离值
+                    LOGI("--------------- 比对值:%f \n",thisThreshold);
+                    cv::putText(mDisplay, "对比结果是"+to_string(thisThreshold), cv::Point(boxes[i].x,boxes[i].y-3), cv::FONT_HERSHEY_SIMPLEX, 1, Scalar(181, 127, 255), 2, cv::LINE_AA);
+                    if (thisThreshold < myThreshold){
+                        found=1;
+                        break;
+                    }
+                }
+            }
+            finish = clock();
+            totaltime_recognition = (double)(finish - start_recognition) / CLOCKS_PER_SEC;
+            LOGI("face recognition time = %f ms\n", totaltime_recognition*1000);
+        }
+
+        LOGI("all time = %f ms\n", (totaltime_detector + totaltime_recognition)*1000);
+
+    } catch (const std::exception &e) {
+
+    } catch (...) {
+
+    }
+
+    return found;
+}
+
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
         (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ){
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
         LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
@@ -604,10 +688,9 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
             LOGI("--------------- 库的人脸特征数:%d \n",face_descriptors_db.size());
 
             size_t i = 0, j = 0;
-            float thisThreshold;
             for (; i < face_descriptors.size(); ++i) {
                 for (; j < face_descriptors_db.size(); ++j) {
-                    thisThreshold = length(face_descriptors[i]-face_descriptors_db[j]);
+                    auto thisThreshold = length(face_descriptors[i]-face_descriptors_db[j]); // 比对结果是一个距离值
                     LOGI("--------------- 比对值:%f \n",thisThreshold);
                     if (thisThreshold < myThreshold){
                         found=1;

@@ -37,6 +37,9 @@ public class Face {
     //人脸特征标记
     public native static String landMarks2(long input,long output);
 
+    //人脸识别
+    public native static int faceRecognition(long input,long output);
+
 
     /**
      * 人脸检测

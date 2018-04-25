@@ -1,15 +1,12 @@
 package com.zzwtec.facedlibopencv;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 
 import org.opencv.android.OpenCVLoader;
@@ -18,11 +15,10 @@ import org.opencv.core.Mat;
 
 public class ImageActivity extends Activity {
 
-    private Button bt, videoBt, videoRecognitionBt, videoDetectorBt, videoDetectorDnnBt;
+    private int type = 1;
     private ImageView img;
     private Bitmap srcBitmap;
     private Handler mHandler;
-    private Boolean initflag = false;
     private static String TAG = "ImageActivity";
 
     @Override
@@ -35,6 +31,11 @@ public class ImageActivity extends Activity {
             System.loadLibrary("opencv_java3");
             System.loadLibrary("native-lib");
         }
+
+        if(img!=null){
+            srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test);
+            img.setImageBitmap(srcBitmap);
+        }
     }
 
     @Override
@@ -43,94 +44,25 @@ public class ImageActivity extends Activity {
         setContentView(R.layout.activity_image);
         mHandler =new Handler();
         img = (ImageView) findViewById(R.id.imageView);
-        bt = (Button) findViewById(R.id.button);
-        srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.face1);
-        img.setImageBitmap(srcBitmap);
 
-        final Context mContext = getApplicationContext();
-
-        videoBt = (Button) findViewById(R.id.video_button);
-        videoBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, MainActivity.class);
-                intent.putExtra("type",1); // 人脸特征标记
-                startActivity(intent);
-            }
-        });
-
-        videoRecognitionBt = (Button) findViewById(R.id.video_recognition_button);
-        videoRecognitionBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, MainActivity.class);
-                intent.putExtra("type",2); // 人脸识别
-                startActivity(intent);
-            }
-        });
-
-        videoDetectorBt = (Button) findViewById(R.id.video_detector_button);
-        videoDetectorBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, MainActivity.class);
-                intent.putExtra("type",3); // 人脸检测
-                startActivity(intent);
-            }
-        });
-
-        videoDetectorDnnBt = (Button) findViewById(R.id.video_detector_dnn_button);
-        videoDetectorDnnBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, MainActivity.class);
-                intent.putExtra("type",4); // 人脸检测 通过dnn
-                startActivity(intent);
-            }
-        });
-
-        bt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                bt.setClickable(false);
-                bt.setVisibility(View.GONE);
-                callFaceLandmark();
-            }
-        });
-
-        bt.setVisibility(View.GONE);
-        videoBt.setVisibility(View.GONE);
-        videoRecognitionBt.setVisibility(View.GONE);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG,"copy file ...");
-                Face.FaceModelFileUtils.copyFaceRecognitionV1ModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyFaceShape5ModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyFaceShape68ModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyHumanFaceModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyFacePicFile(getApplicationContext());
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        bt.setVisibility(View.VISIBLE);
-                        videoBt.setVisibility(View.VISIBLE);
-                        videoRecognitionBt.setVisibility(View.VISIBLE);
-                    }
-                });
-                Log.d(TAG,"copy file over");
-            }
-        }).start();
+        //取得从上一个Activity当中传递过来的Intent对象
+        Intent intent = getIntent();
+        //从Intent当中根据key取得value
+        if (intent != null) {
+            type = intent.getIntExtra("type",1);
+        }
+        if(type == 1){ // 人脸检测并标记特征点
+            callFaceLandmark();
+        }else if(type == 2){ // 人脸识别
+            callFaceRecognition();
+        }
     }
 
     //68点检测
     private void callFaceLandmark() {
         new Thread(new Runnable() {
             public void run() {
-                if (!initflag) {
-                    Face.initModel(Constants.getFaceShape68ModelPath(),1);
-                    initflag = true;
-                }
+                Face.initModel(Constants.getFaceShape68ModelPath(),1);
                 long detectStime =System.currentTimeMillis();
                 Mat input = new Mat();
                 Mat output = new Mat();
@@ -139,6 +71,27 @@ public class ImageActivity extends Activity {
                 Utils.matToBitmap(output, srcBitmap);
                 long detectTime = System.currentTimeMillis() - detectStime;
                 String detectTimeStr = "检测68点,耗时:"+ String.valueOf(detectTime) + "ms.";
+                Log.e(TAG, detectTimeStr);
+                mHandler.post(updateImg);
+
+            }
+        }).start();
+    }
+
+    // 人脸识别
+    private void callFaceRecognition() {
+        new Thread(new Runnable() {
+            public void run() {
+                Face.initModel(Constants.getFaceShape5ModelPath(),0);
+                Face.initModel(Constants.getFaceRecognitionV1ModelPath(),3);
+                long detectStime =System.currentTimeMillis();
+                Mat input = new Mat();
+                Mat output = new Mat();
+                Utils.bitmapToMat(srcBitmap, input);
+                Face.faceRecognition(input.getNativeObjAddr(), output.getNativeObjAddr());
+                Utils.matToBitmap(output, srcBitmap);
+                long detectTime = System.currentTimeMillis() - detectStime;
+                String detectTimeStr = "人脸识别,耗时:"+ String.valueOf(detectTime) + "ms.";
                 Log.e(TAG, detectTimeStr);
                 mHandler.post(updateImg);
 

@@ -1,13 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
 
-    <org.opencv.android.JavaCameraView
-        android:id="@+id/javaCameraView"
+    <Button
+        android:id="@+id/button"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:show_fps="true" />
+        android:layout_height="wrap_content"
+        android:text="Get Landmarks"/>
+
+    <Button
+        android:id="@+id/recognition_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get face recognition"/>
+
+    <Button
+        android:id="@+id/video_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Video Landmarks"/>
+
+    <Button
+        android:id="@+id/video_detector_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Video face detector"/>
+
+    <Button
+        android:id="@+id/video_detector_dnn_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Video face detector by DNN"/>
+
+    <Button
+        android:id="@+id/video_recognition_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Video face recognition"/>
 
 </LinearLayout>
