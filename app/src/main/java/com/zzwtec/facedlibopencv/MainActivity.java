@@ -82,13 +82,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             @Override
             public void run() {
                 if(!initflag){
-                    if(type == 1){ // 人脸检测
+                    if(type == 1){ // 人脸特征标记
                         // FpsMeter: 5.20
-                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
+//                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
 
                         // FpsMeter: 4.7
-//                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
-                    }else{ // 人脸识别
+                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
+                    }else if(type == 3){ // 人脸检测
+
+                    }else if(type == 2){ // 人脸识别
                         Face.initModel(Constants.getFaceShape5ModelPath(),0);
 //                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
 
@@ -149,28 +151,22 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         Log.d(TAG, "MainActivity onCameraFrame");
 
         if(initflag){
-            if(type == 1){ // 人脸检测
-                // FpsMeter: 4.81
-                mRgb = inputFrame.rgb();
-                mDisplay = mRgb;
-                Face.landMarks1(mRgb.getNativeObjAddr(),1,mDisplay.getNativeObjAddr());
-
-
-                // FpsMeter: 4.67
-//            mBgr = inputFrame.bgr();
-//            mRgb = inputFrame.rgb();
-//            mDisplay = mRgb;
-//            Face.landMarks1(mBgr.getNativeObjAddr(),2,mDisplay.getNativeObjAddr());
-
+            if(type == 1){ // 人脸特征标记
                 // FpsMeter: 4.89
-//            mGray = inputFrame.gray();
-//            mRgba = inputFrame.rgba();
-//            mDisplay = mRgba;
-//            Face.landMarks1(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
-            }else{ // 人脸识别
+                mGray = inputFrame.gray();
+                mRgba = inputFrame.rgba();
+                mDisplay = mRgba;
+                Face.landMarks1(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+            }else if(type == 3){ // 人脸检测
+                mGray = inputFrame.gray();
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
-                Face.faceRecognition(mRgb.getNativeObjAddr(),1,mDisplay.getNativeObjAddr());
+                Face.faceDetector(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+            }else if(type == 2){ // 人脸识别
+                mGray = inputFrame.gray();
+                mRgb = inputFrame.rgb();
+                mDisplay = mRgb;
+                Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
             }
 
             return mDisplay;

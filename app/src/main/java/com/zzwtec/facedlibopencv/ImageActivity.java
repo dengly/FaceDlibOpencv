@@ -18,7 +18,7 @@ import org.opencv.core.Mat;
 
 public class ImageActivity extends Activity {
 
-    private Button bt, videoBt, videoRecognitionBt;
+    private Button bt, videoBt, videoRecognitionBt, videoDetectorBt;
     private ImageView img;
     private Bitmap srcBitmap;
     private Handler mHandler;
@@ -54,7 +54,7 @@ public class ImageActivity extends Activity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(mContext, MainActivity.class);
-                intent.putExtra("type",1); // 人脸检测
+                intent.putExtra("type",1); // 人脸特征标记
                 startActivity(intent);
             }
         });
@@ -69,6 +69,15 @@ public class ImageActivity extends Activity {
             }
         });
 
+        videoDetectorBt = (Button) findViewById(R.id.video_detector_button);
+        videoDetectorBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, MainActivity.class);
+                intent.putExtra("type",3); // 人脸检测
+                startActivity(intent);
+            }
+        });
 
         bt.setOnClickListener(new View.OnClickListener() {
             @Override

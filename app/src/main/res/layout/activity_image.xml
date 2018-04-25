@@ -17,6 +17,12 @@
         android:text="Get Video Landmarks"/>
 
     <Button
+        android:id="@+id/video_detector_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Video face detector"/>
+
+    <Button
         android:id="@+id/video_recognition_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
