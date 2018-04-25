@@ -18,7 +18,7 @@ import org.opencv.core.Mat;
 
 public class ImageActivity extends Activity {
 
-    private Button bt, videoBt, videoRecognitionBt, videoDetectorBt;
+    private Button bt, videoBt, videoRecognitionBt, videoDetectorBt, videoDetectorDnnBt;
     private ImageView img;
     private Bitmap srcBitmap;
     private Handler mHandler;
@@ -79,9 +79,21 @@ public class ImageActivity extends Activity {
             }
         });
 
+        videoDetectorDnnBt = (Button) findViewById(R.id.video_detector_dnn_button);
+        videoDetectorDnnBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, MainActivity.class);
+                intent.putExtra("type",4); // 人脸检测 通过dnn
+                startActivity(intent);
+            }
+        });
+
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                bt.setClickable(false);
+                bt.setVisibility(View.GONE);
                 callFaceLandmark();
             }
         });

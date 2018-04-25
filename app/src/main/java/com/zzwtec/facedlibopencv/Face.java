@@ -48,6 +48,15 @@ public class Face {
     public native static int faceDetector(long srcAAddr, int format, long displayAddr);
 
     /**
+     * 人脸检测
+     * @param srcAAddr 源
+     * @param format 源类型 1 - rgb、2 - bgr、3 - gray
+     * @param displayAddr 要显示
+     * @return
+     */
+    public native static int faceDetectorByDNN(long srcAAddr, int format, long displayAddr);
+
+    /**
      * 人脸识别
      * @param srcAAddr 源
      * @param format 源类型 1 - rgb、2 - bgr、3 - gray

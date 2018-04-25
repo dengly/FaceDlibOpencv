@@ -90,6 +90,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                         Face.initModel(Constants.getFaceShape68ModelPath(),1);
                     }else if(type == 3){ // 人脸检测
 
+                    }else if(type == 4){ // 人脸检测 通过dnn
+                        Face.initModel(Constants.getHumanFaceModelPath(),2);
                     }else if(type == 2){ // 人脸识别
                         Face.initModel(Constants.getFaceShape5ModelPath(),0);
 //                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
@@ -162,6 +164,11 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
                 Face.faceDetector(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+            }else if(type == 4){ // 人脸检测 通过dnn
+                mGray = inputFrame.gray();
+                mRgb = inputFrame.rgb();
+                mDisplay = mRgb;
+                Face.faceDetectorByDNN(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
             }else if(type == 2){ // 人脸识别
                 mGray = inputFrame.gray();
                 mRgb = inputFrame.rgb();

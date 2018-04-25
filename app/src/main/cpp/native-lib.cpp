@@ -138,9 +138,8 @@ void render_face(cv::Mat &img, const dlib::full_object_detection& d) {
 
 // 人脸检测
 template <typename T>
-void detector_face(array2d<T>& img, array2d<T>& img_small, Mat& mDisplay, bool isRecognition = false){
-    std::vector<dlib::rectangle> faces ;
-    faces = detector(img_small, 1); //检测人脸，获得边界框
+void detector_face(matrix<T>& img, matrix<T>& img_small, Mat& mDisplay, bool isRecognition = false){
+    std::vector<dlib::rectangle> faces = detector(img_small, 1); //检测人脸，获得边界框
 
     LOGI("faces size:%d",faces.size());
 
@@ -255,7 +254,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
 
     try{
         Mat result ;
-        array2d<bgr_pixel> img;
+        matrix<bgr_pixel> img;
         cvtColor(outMat, result, CV_RGBA2BGR);
         assign_image(img, cv_image<bgr_pixel>(result));
 
@@ -339,7 +338,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
         cv::Mat mSrc_small;
         cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
 
-        array2d<unsigned char> img, img_small; // greyscale
+        matrix<unsigned char> img, img_small; // greyscale
         if(formatType == 1){ // rgb
             assign_image(img_small, cv_image<rgb_pixel>(mSrc_small));
             assign_image(img, cv_image<rgb_pixel>(mSrc));
@@ -387,7 +386,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
     double totaltime;
     start = clock();
     try{
-        array2d<rgb_pixel> img;
+        matrix<rgb_pixel> img;
         assign_image(img, cv_image<rgb_pixel>(mRgb));
 
         std::vector<dlib::rectangle> faces = detector(img, 1); //检测人脸，获得边界框
@@ -446,7 +445,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetector
         cv::Mat mSrc_small;
         cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
 
-        array2d<unsigned char> img, img_small; // greyscale
+        matrix<unsigned char> img, img_small; // greyscale
         if(formatType == 1){ // rgb
             assign_image(img_small, cv_image<rgb_pixel>(mSrc_small));
             assign_image(img, cv_image<rgb_pixel>(mSrc));
@@ -458,6 +457,63 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetector
             assign_image(img, cv_image<unsigned char>(mSrc));
         }
         detector_face( img, img_small, mDisplay);
+    } catch (const std::exception &e) {
+
+    } catch (...) {
+
+    }
+
+    finish = clock();
+    totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
+    LOGD("detector face time = %f ms\n", totaltime*1000);
+
+    return 1;
+}
+
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
+        (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ) {
+    Mat& mSrc = *(Mat*) srcAAddr;
+    int formatType = (int)format;
+    Mat& mDisplay = *(Mat*) displayAddr;
+
+    LOGD("jnidetect");
+    showBox = true;
+    showLine = false;
+
+    long start, finish;
+    double totaltime;
+    start = clock();
+    try{
+        // Resize image for face detection
+        int zoom = 3;
+        cv::Mat mSrc_small;
+        cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO/zoom, 1.0/FACE_DOWNSAMPLE_RATIO/zoom);
+
+        matrix<rgb_pixel> img, img_small; // greyscale
+        if(formatType == 1){ // rgb
+            assign_image(img_small, cv_image<rgb_pixel>(mSrc_small));
+            assign_image(img, cv_image<rgb_pixel>(mSrc));
+        } else if(formatType == 2){ // bgr
+            assign_image(img_small, cv_image<bgr_pixel>(mSrc_small));
+            assign_image(img, cv_image<bgr_pixel>(mSrc));
+        }else if(formatType == 3){ // gray
+            assign_image(img_small, cv_image<unsigned char>(mSrc_small));
+            assign_image(img, cv_image<unsigned char>(mSrc));
+        }
+
+        auto dets = net_humanFace(img_small);
+        int size = 0;
+        for (auto&& d : dets){
+            cv::Rect box(0,0,0,0);
+            box.x = d.rect.left() * FACE_DOWNSAMPLE_RATIO*zoom;
+            box.y = d.rect.top() * FACE_DOWNSAMPLE_RATIO*zoom;
+            box.width = d.rect.width() * FACE_DOWNSAMPLE_RATIO*zoom;
+            box.height = d.rect.height() * FACE_DOWNSAMPLE_RATIO*zoom;
+            cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
+            size++;
+        }
+        LOGI("faces size:%d",size);
+
     } catch (const std::exception &e) {
 
     } catch (...) {
@@ -485,6 +541,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
         LOGE("没有初始化 人脸库");
         return 0;
     }
+    showBox=true;
     Mat& mSrc = *(Mat*) srcAAddr;
     int formatType = (int)format;
     Mat& mDisplay = *(Mat*) displayAddr;
@@ -497,7 +554,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
         cv::Mat mSrc_small;
         cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
 
-        array2d<unsigned char> img, img_small; // greyscale
+        matrix<unsigned char> img, img_small; // greyscale
         if(formatType == 1){ // rgb
             assign_image(img_small, cv_image<rgb_pixel>(mSrc_small));
             assign_image(img, cv_image<rgb_pixel>(mSrc));
@@ -514,11 +571,11 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
 
         start_detector = clock();
         std::vector<cv::Rect> boxes;
-        std::vector<matrix<rgb_pixel>> faces;
+        std::vector<matrix<rgb_pixel>> faces; //
         for (auto face : detector(img_small, 1)) { // 人脸检测
             auto shape = pose_model(img, face); // 提取人脸特征
             matrix<rgb_pixel> face_chip;
-            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
+            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip); // 提取裁剪 直立旋转和缩放至标准尺寸的每张脸的副本
             faces.push_back(move(face_chip));
 
             if(showBox) {

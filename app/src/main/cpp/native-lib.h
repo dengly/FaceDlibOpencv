@@ -64,6 +64,14 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetector
 
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
+ * Method:    faceDetectorByDNN
+ * Signature: (JFJ)Ljava/lang/String;
+ */
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
+        (JNIEnv *, jclass, jlong, jint, jlong );
+
+/*
+ * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    faceRecognition
  * Signature: (JFJ)F
  */
