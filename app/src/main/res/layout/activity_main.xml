@@ -8,36 +8,36 @@
         android:id="@+id/button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Landmarks"/>
+        android:text="图片人脸特征标记"/>
 
     <Button
         android:id="@+id/recognition_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get face recognition"/>
+        android:text="图片人脸识别"/>
 
     <Button
         android:id="@+id/video_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Video Landmarks"/>
+        android:text="视频人脸特征标记"/>
 
     <Button
         android:id="@+id/video_detector_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Video face detector"/>
+        android:text="视频人脸检测"/>
 
     <Button
         android:id="@+id/video_detector_dnn_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Video face detector by DNN"/>
+        android:text="通过DNN视频人脸检测"/>
 
     <Button
         android:id="@+id/video_recognition_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Video face recognition"/>
+        android:text="视频人脸同步识别"/>
 
 </LinearLayout>

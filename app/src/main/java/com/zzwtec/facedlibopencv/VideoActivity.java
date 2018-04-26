@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -21,6 +22,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
 
     private static String TAG = "VideoActivity";
 
+    private Button button;
     private Camera mCamera;
 
     private Boolean initflag = false;
@@ -31,6 +33,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
     private Mat mDisplay;
 
     private int mWidth, mHeight, type = 1;
+    private int click=0;
 
     private Bitmap mCacheBitmap;
 
@@ -68,6 +71,21 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
             public void onClick(View v) {
                 mCamera = javaCameraView.getCamera();
                 if (mCamera!=null) mCamera.autoFocus(null);
+            }
+        });
+
+        button = (Button)findViewById(R.id.button);
+        button.setVisibility(View.VISIBLE);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                click = (++click) % 2;
+                if(click==0){
+                    javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
+                }else{
+                    javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK); // 设置打开后置摄像头
+                }
+                javaCameraView.changeCamera();
             }
         });
 

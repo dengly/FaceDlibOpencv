@@ -443,16 +443,6 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
                 //绘制指定的位图，自动缩放/翻译以填充目标矩形。 如果源矩形不为空，则指定要绘制的位图的子集。
                 canvas.drawBitmap(mCacheBitmap, srcRect, dstRect, null);
 
-                // 修改预览旋转90问题
-                // 能够通过旋转，正常显示预览，但是图像被缩放了
-//                Matrix matrix = new Matrix();
-//                matrix.preTranslate((canvas.getWidth() - mCacheBitmap.getWidth()) / 2, (canvas.getHeight() - mCacheBitmap.getHeight()) / 2);
-//
-//                if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT)
-//                    matrix.postRotate(90f, (canvas.getWidth()) / 2, (canvas.getHeight()) / 2);
-//                canvas.drawBitmap(mCacheBitmap, matrix, new Paint());
-                // 修改预览旋转90问题end
-
                 if (mFpsMeter != null) {
                     mFpsMeter.measure();
                     mFpsMeter.draw(canvas, 20, 30);
