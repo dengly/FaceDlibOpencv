@@ -13,7 +13,7 @@ import org.opencv.android.OpenCVLoader;
 
 public class MainActivity extends Activity {
 
-    private Button bt, recognitionbt, videoBt, videoRecognitionBt, videoDetectorBt, videoDetectorDnnBt;
+    private Button bt, recognitionbt, videoBt, videoRecognitionBt, videoDetectorBt, videoDetectorDnnBt, videoRecognitionAsynBt;
     private Handler mHandler;
     private Boolean initflag = false;
     private static String TAG = "MainActivity";
@@ -73,7 +73,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(mContext, VideoActivity.class);
-                intent.putExtra("type",2); // 人脸识别
+                intent.putExtra("type",2); // 同步人脸识别
                 startActivity(intent);
             }
         });
@@ -94,6 +94,15 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 Intent intent = new Intent(mContext, VideoActivity.class);
                 intent.putExtra("type",4); // 人脸检测 通过dnn
+                startActivity(intent);
+            }
+        });
+        videoRecognitionAsynBt = (Button) findViewById(R.id.video_recognition_asyn_button);
+        videoRecognitionAsynBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, VideoActivity.class);
+                intent.putExtra("type",5); // 异步人脸识别
                 startActivity(intent);
             }
         });

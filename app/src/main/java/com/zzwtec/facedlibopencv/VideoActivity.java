@@ -4,18 +4,22 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
 public class VideoActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -36,6 +40,10 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
     private int click=0;
 
     private Bitmap mCacheBitmap;
+    private Handler mHandler;
+    private ImageView imageView;
+
+    private volatile boolean check=false;
 
     private JavaCameraView javaCameraView;
     private BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(this) {
@@ -59,7 +67,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         //保持屏幕常亮
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_video);
-
+        mHandler =new Handler();
+        imageView = (ImageView) findViewById(R.id.imageView);
         javaCameraView = (JavaCameraView) findViewById(R.id.javaCameraView);
         javaCameraView.setVisibility(SurfaceView.VISIBLE);
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
@@ -110,7 +119,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
 
                     }else if(type == 4){ // 人脸检测 通过dnn
                         Face.initModel(Constants.getHumanFaceModelPath(),2);
-                    }else if(type == 2){ // 人脸识别
+                    }else if(type == 2 || type == 5){ // 同步人脸识别 异步人脸识别
                         Face.initModel(Constants.getFaceShape5ModelPath(),0);
 //                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
 
@@ -187,11 +196,37 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
                 Face.faceDetectorByDNN(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
-            }else if(type == 2){ // 人脸识别
+            }else if(type == 2 ){ // 同步人脸识别
                 mGray = inputFrame.gray();
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
                 Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+            }else if(type == 5){ //异步人脸识别
+                mGray = inputFrame.gray();
+                mRgb = inputFrame.rgb();
+                mDisplay = mRgb;
+
+                if(!check){
+                    check = true;
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            int re = Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+                            if(re>0){
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                                        Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
+                                        Utils.matToBitmap(mDisplay, srcBitmap);
+                                        imageView.setImageBitmap(srcBitmap);
+                                    }
+                                });
+                            }
+                            check = false;
+                        }
+                    }).start();
+                }
             }
 
             return mDisplay;

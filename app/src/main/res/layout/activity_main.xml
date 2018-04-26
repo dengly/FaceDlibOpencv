@@ -40,4 +40,10 @@
         android:layout_height="wrap_content"
         android:text="视频人脸同步识别"/>
 
+    <Button
+        android:id="@+id/video_recognition_asyn_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="视频人脸异步识别"/>
+
 </LinearLayout>
