@@ -16,6 +16,14 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initModel
 
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
+ * Method:    getMaxFace
+ * Signature: (F)F
+ */
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_getMaxFace
+        (JNIEnv *, jclass, jint);
+
+/*
+ * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    showBox
  * Signature: (F)F
  */

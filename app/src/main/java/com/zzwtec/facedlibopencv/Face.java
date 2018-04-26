@@ -21,6 +21,9 @@ public class Face {
     //设置是否显示人脸特征线
     public native static int showLandMarks(int show);
 
+    //设置是否只对最大的人脸做识别
+    public native static int getMaxFace(int maxFace);
+
     //人脸特征标记
     public native static String landMarks(long rgbaAAddr, long grayAddr, long bgrAddr, long rgbAddr, long displayAddr);
 
@@ -66,7 +69,7 @@ public class Face {
      * @param displayAddr 要显示
      * @return
      */
-    public native static int faceRecognition(long srcAAddr, int format, long displayAddr, String facesPath);
+    public native static int faceRecognition(long srcAAddr, int format, long displayAddr, String facesPath, Rect);
 
     /**
      * 初始化脸部描述符

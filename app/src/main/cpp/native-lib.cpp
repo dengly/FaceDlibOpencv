@@ -71,6 +71,7 @@ bool initflag_faceRecognitionV1 = false; // 人脸识别模型初始化标记
 bool initflag_faceDB = false; // 人脸库初始化标记
 bool showBox = true; // 是否显示人脸框
 bool showLine = false; // 是否显示人脸特征线
+bool maxFace = false; // 是否只对最大的人脸做识别
 bool useCNN = false; // 是否使用卷积神经网络（CNN）
 float myThreshold = 0.6 ; //人脸识别的决策阈值
 
@@ -149,7 +150,6 @@ int detector_face(matrix<T>& img, matrix<T>& img_small, Mat& mDisplay){
     long start_detector=0, finish=0;
     double totaltime_detector=0.0;
     int found = 0;
-
     start_detector = clock();
 
     for (auto face_small_rectangle : detector(img_small, 1)){ //检测人脸，获得边界框
@@ -160,11 +160,15 @@ int detector_face(matrix<T>& img, matrix<T>& img_small, Mat& mDisplay){
         auto shape_small = pose_model(img_small, face_small_rectangle);  // 提取人脸特征
 
         if(showBox){
-            cv::Rect box(0, 0, 0, 0);
+            int top = face_small_rectangle.top() - face_small_rectangle.height() / 3 ;
+            top = top < 0 ? 0 : top;
+            int height = face_small_rectangle.height() * 4 / 3 ;
+            height = height + top > (int)img_small.nr ? (int)img_small.nr - top : height ;
+            cv::Rect box(0,0,0,0);
             box.x = face_small_rectangle.left() * FACE_DOWNSAMPLE_RATIO;
-            box.y = face_small_rectangle.top() * FACE_DOWNSAMPLE_RATIO;
+            box.y = top * FACE_DOWNSAMPLE_RATIO;
             box.width = face_small_rectangle.width() * FACE_DOWNSAMPLE_RATIO;
-            box.height = face_small_rectangle.height() * FACE_DOWNSAMPLE_RATIO;
+            box.height = height * FACE_DOWNSAMPLE_RATIO;
             cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
         }
         if(showLine) {
@@ -305,6 +309,12 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_showBox
     return 1;
 }
 
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_getMaxFace
+        (JNIEnv * env, jclass jobject, jint maxFace) {
+    maxFace = (int)maxFace == 1 ;
+    return 1;
+}
+
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_showLandMarks
         (JNIEnv * env, jclass jobject, jint show) {
     showLine = (int)show == 1 ;
@@ -354,10 +364,14 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
 
         full_object_detection shape = pose_model(img, dets[Max]); // 一个人的人脸特征
         if(showBox) {
-            box.x = dets[Max].left();
-            box.y = dets[Max].top();
-            box.width = dets[Max].width();
-            box.height = dets[Max].height();
+            int top = dets[Max].top() - dets[Max].height() / 3 ;
+            top = top < 0 ? 0 : top;
+            int height = dets[Max].height() * 4 / 3 ;
+            height = height + top > (int)img.nr ? (int)img.nr - top : height ;
+            box.x = dets[Max].left() * FACE_DOWNSAMPLE_RATIO;
+            box.y = top * FACE_DOWNSAMPLE_RATIO;
+            box.width = dets[Max].width() * FACE_DOWNSAMPLE_RATIO;
+            box.height = height * FACE_DOWNSAMPLE_RATIO;
         }
 
         pts2d.clear();
@@ -481,11 +495,15 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
 //            shapes.push_back(shape);
 
             if(showBox) {
+                int top = faces[i].top() - faces[i].height() / 3 ;
+                top = top < 0 ? 0 : top;
+                int height = faces[i].height() * 4 / 3 ;
+                height = height + top > (int)img.nr ? (int)img.nr - top : height ;
                 cv::Rect box(0, 0, 0, 0);
-                box.x = faces[i].left();
-                box.y = faces[i].top();
-                box.width = faces[i].width();
-                box.height = faces[i].height();
+                box.x = faces[i].left() * FACE_DOWNSAMPLE_RATIO;
+                box.y = top * FACE_DOWNSAMPLE_RATIO;
+                box.width = faces[i].width() * FACE_DOWNSAMPLE_RATIO;
+                box.height = height * FACE_DOWNSAMPLE_RATIO;
                 cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
             }
             if(showLine) {
@@ -585,11 +603,17 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
         auto dets = net_humanFace(img_small);
         int size = 0;
         for (auto&& d : dets){
+
+            int top = d.rect.top() - d.rect.height() / 3 ;
+            top = top < 0 ? 0 : top;
+            int height = d.rect.height() * 4 / 3 ;
+            height = height + top > (int)img_small.nr ? (int)img_small.nr - top : height ;
+
             cv::Rect box(0,0,0,0);
-            box.x = d.rect.left() * FACE_DOWNSAMPLE_RATIO*zoom;
-            box.y = d.rect.top() * FACE_DOWNSAMPLE_RATIO*zoom;
-            box.width = d.rect.width() * FACE_DOWNSAMPLE_RATIO*zoom;
-            box.height = d.rect.height() * FACE_DOWNSAMPLE_RATIO*zoom;
+            box.x = d.rect.left() * FACE_DOWNSAMPLE_RATIO;
+            box.y = top * FACE_DOWNSAMPLE_RATIO;
+            box.width = d.rect.width() * FACE_DOWNSAMPLE_RATIO;
+            box.height = height * FACE_DOWNSAMPLE_RATIO;
             cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
             size++;
         }
@@ -658,12 +682,17 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPic
             faces.push_back(move(face_chip));
 
             if(showBox) {
+
+                int top = face.top() - face.height() / 3 ;
+                top = top < 0 ? 0 : top;
+                int height = face.height() * 4 / 3 ;
+                height = height + top > (int)img.nr ? (int)img.nr - top : height ;
+
                 cv::Rect box(0,0,0,0);
                 box.x = face.left();
-                box.y = face.top();
+                box.y = top;
                 box.width = face.width();
-                box.height = face.height();
-                boxes.push_back(box);
+                box.height = height;
                 cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
             }
         }
@@ -766,7 +795,25 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
         std::vector<cv::Rect> boxes; // 人脸位置框
 
         start_detector = clock();
-        for (auto face_small : detector(img_small, 1)) { // 人脸检测
+
+        std::vector<dlib::rectangle> detector_faces = detector(img_small, 1);
+
+        int Max = 0;
+        if(maxFace){
+            int area = 0; // 获取最大面值的人脸
+            if (detector_faces.size() != 0) {
+                for (unsigned long t = 0; t < detector_faces.size(); ++t) {
+                    if (area < detector_faces[t].width()*detector_faces[t].height()) {
+                        area = detector_faces[t].width()*detector_faces[t].height();
+                        Max = t;
+                    }
+                }
+            }
+            dlib::rectangle max_face_small = detector_faces[Max];
+            detector_faces.clear();
+            detector_faces.push_back(max_face_small);
+        }
+        for (auto face_small : detector_faces) { // 人脸检测
 //            if(face_small.width() * face_small.height() * FACE_DOWNSAMPLE_RATIO * FACE_DOWNSAMPLE_RATIO < 150 * 150){
 //                continue;
 //            }
@@ -776,15 +823,20 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
             faces.push_back(move(face_chip));
 
             if(showBox) {
+                int top = face_small.top() - face_small.height() / 3 ;
+                top = top < 0 ? 0 : top;
+                int height = face_small.height() * 4 / 3 ;
+                height = height + top > (int)img_small.nr ? (int)img_small.nr - top : height ;
                 cv::Rect box(0,0,0,0);
                 box.x = face_small.left() * FACE_DOWNSAMPLE_RATIO;
-                box.y = face_small.top() * FACE_DOWNSAMPLE_RATIO;
+                box.y = top * FACE_DOWNSAMPLE_RATIO;
                 box.width = face_small.width() * FACE_DOWNSAMPLE_RATIO;
-                box.height = face_small.height() * FACE_DOWNSAMPLE_RATIO;
+                box.height = height * FACE_DOWNSAMPLE_RATIO;
                 boxes.push_back(box);
                 cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
             }
         }
+
         finish = clock();
         LOGI("\nface detector time = %f ms\n", ((double)(finish - start_detector) / CLOCKS_PER_SEC)*1000);
 

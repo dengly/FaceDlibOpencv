@@ -152,6 +152,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
 
     @Override
     public void onCameraViewStarted(int width, int height) {
+        imageView.getLayoutParams().width = width/6 ;
+        imageView.getLayoutParams().height = height/6 ;
         mWidth = width;
         mHeight = height;
         mRgba = new Mat();
@@ -206,19 +208,21 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
 
+                final Mat gray = mGray;
+                final Mat display = mDisplay;
                 if(!check){
                     check = true;
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            int re = Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+                            int re = Face.faceRecognition(gray.getNativeObjAddr(),3,display.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
                             if(re>0){
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
                                         Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
-                                        Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
-                                        Utils.matToBitmap(mDisplay, srcBitmap);
+                                        Bitmap srcBitmap = Bitmap.createBitmap(display.width(), display.height(), Bitmap.Config.ARGB_8888);
+                                        Utils.matToBitmap(display, srcBitmap);
                                         imageView.setImageBitmap(srcBitmap);
                                     }
                                 });
