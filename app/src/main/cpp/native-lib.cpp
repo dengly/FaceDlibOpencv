@@ -172,11 +172,11 @@ int detector_face(matrix<T>& img, matrix<T>& img_small, Mat& mDisplay){
             box.width = face_small_rectangle.width() * FACE_DOWNSAMPLE_RATIO;
             box.height = face_small_rectangle.height() * FACE_DOWNSAMPLE_RATIO;
 
-            int top = box.x - box.height / 3 ;
+            int top = box.y - box.height / 3 ;
             top = top < 0 ? 0 : top;
             int height = box.height * 4 / 3 ;
             height = height + top > mDisplay.size().height ? mDisplay.size().height - top : height ;
-            box.x = top;
+            box.y = top;
             box.height = height;
 
             cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
@@ -378,16 +378,16 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
 
         full_object_detection shape = pose_model(img, dets[Max]); // 一个人的人脸特征
         if(showBox) {
-            box.x = dets[Max].top();
-            box.y = dets[Max].left();
+            box.x = dets[Max].left();
+            box.y = dets[Max].top();
             box.width = dets[Max].width();
             box.height = dets[Max].height();
 
-            int top = box.x - box.height / 3 ;
+            int top = box.y - box.height / 3 ;
             top = top < 0 ? 0 : top;
             int height = box.height * 4 / 3 ;
             height = height + top > outMat.size().height ? outMat.size().height - top : height ;
-            box.x = top;
+            box.y = top;
             box.height = height;
         }
 
@@ -514,16 +514,16 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
             if(showBox) {
                 cv::Rect box(0, 0, 0, 0);
 
-                box.x = faces[i].top();
-                box.y = faces[i].left();
+                box.x = faces[i].left();
+                box.y = faces[i].top();
                 box.width = faces[i].width();
                 box.height = faces[i].height();
 
-                int top = box.x - box.height / 3 ;
+                int top = box.y - box.height / 3 ;
                 top = top < 0 ? 0 : top;
                 int height = box.height * 4 / 3 ;
                 height = height + top > mDisplay.size().height ? mDisplay.size().height - top : height ;
-                box.x = top;
+                box.y = top;
                 box.height = height;
 
                 cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
@@ -631,11 +631,11 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
             box.width = d.rect.width() * FACE_DOWNSAMPLE_RATIO*zoom;
             box.height = d.rect.height() * FACE_DOWNSAMPLE_RATIO*zoom;
 
-            int top = box.x - box.height / 3 ;
+            int top = box.y - box.height / 3 ;
             top = top < 0 ? 0 : top;
             int height = box.height * 4 / 3 ;
             height = height + top > mDisplay.size().height ? mDisplay.size().height - top : height ;
-            box.x = top;
+            box.y = top;
             box.height = height;
 
             cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
@@ -713,11 +713,11 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPic
                 box.width = face.width();
                 box.height = face.height();
 
-                int top = box.x - box.height / 3 ;
+                int top = box.y - box.height / 3 ;
                 top = top < 0 ? 0 : top;
                 int height = box.height * 4 / 3 ;
                 height = height + top > mDisplay.size().height ? mDisplay.size().height - top : height ;
-                box.x = top;
+                box.y = top;
                 box.height = height;
 
                 boxes.push_back(box);
@@ -857,11 +857,11 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
                 box.width = face_small.width() * FACE_DOWNSAMPLE_RATIO;
                 box.height = face_small.height() * FACE_DOWNSAMPLE_RATIO;
 
-                int top = box.x - box.height / 3 ;
+                int top = box.y - box.height / 3 ;
                 top = top < 0 ? 0 : top;
                 int height = box.height * 4 / 3 ;
                 height = height + top > mDisplay.size().height ? mDisplay.size().height - top : height ;
-                box.x = top;
+                box.y = top;
                 box.height = height;
 
                 boxes.push_back(box);
