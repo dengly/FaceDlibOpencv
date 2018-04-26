@@ -173,7 +173,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 mGray = inputFrame.gray();
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
-                Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+                Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
             }
 
             return mDisplay;

@@ -59,7 +59,7 @@ using net_type = loss_mmod<con<1, 9, 9, 1, 1, rcon5<rcon5<rcon5<downsampler<inpu
 // ----------------------------------------------------------------------------------------
 
 frontal_face_detector detector = dlib::get_frontal_face_detector(); // 不使用 GPU ,依赖 CPU
-shape_predictor pose_model;//定义个shape_predictor类的实例
+shape_predictor pose_model;//shape_predictor的作用是：以图像的某块区域为输入，输出一系列的点（point location）以表示此图像region里object的姿势pose。所以，shape_predictor主要用于表示object的姿势
 
 net_type net_humanFace; // 用于人脸检测
 anet_type net_faceRecognition; // 用户人脸识别
@@ -136,38 +136,119 @@ void render_face(cv::Mat &img, const dlib::full_object_detection& d) {
 
 }
 
-// 人脸检测
+/**
+ * 人脸检测
+ * @tparam T
+ * @param img
+ * @param img_small
+ * @param mDisplay
+ * @return
+ */
 template <typename T>
-void detector_face(matrix<T>& img, matrix<T>& img_small, Mat& mDisplay, bool isRecognition = false){
-    std::vector<dlib::rectangle> faces = detector(img_small, 1); //检测人脸，获得边界框
+int detector_face(matrix<T>& img, matrix<T>& img_small, Mat& mDisplay){
+    long start_detector=0, finish=0;
+    double totaltime_detector=0.0;
+    int found = 0;
 
-    LOGI("faces size:%d",faces.size());
+    start_detector = clock();
 
-    // Find the pose of each face.
-//    std::vector<full_object_detection> shapes;
-    for (unsigned long i = 0; i < faces.size(); ++i){
-        full_object_detection shape = pose_model(img, faces[i]);  // 一个人的人脸特征
-//        shapes.push_back(shape);
+    for (auto face_small_rectangle : detector(img_small, 1)){ //检测人脸，获得边界框
+//        if(face_small_rectangle.width() * face_small_rectangle.height() * FACE_DOWNSAMPLE_RATIO * FACE_DOWNSAMPLE_RATIO < 150 * 150){
+//            continue;
+//        }
+        found++;
+        auto shape_small = pose_model(img_small, face_small_rectangle);  // 提取人脸特征
 
         if(showBox){
             cv::Rect box(0, 0, 0, 0);
-            box.x = faces[i].left() * FACE_DOWNSAMPLE_RATIO;
-            box.y = faces[i].top() * FACE_DOWNSAMPLE_RATIO;
-            box.width = faces[i].width() * FACE_DOWNSAMPLE_RATIO;
-            box.height = faces[i].height() * FACE_DOWNSAMPLE_RATIO;
+            box.x = face_small_rectangle.left() * FACE_DOWNSAMPLE_RATIO;
+            box.y = face_small_rectangle.top() * FACE_DOWNSAMPLE_RATIO;
+            box.width = face_small_rectangle.width() * FACE_DOWNSAMPLE_RATIO;
+            box.height = face_small_rectangle.height() * FACE_DOWNSAMPLE_RATIO;
             cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
         }
         if(showLine) {
-            // Custom Face Render
-            render_face(mDisplay, shape); //描线
+            render_face(mDisplay, shape_small); //描线
+        }
+    }
+
+
+    finish = clock();
+    totaltime_detector = (double)(finish - start_detector) / CLOCKS_PER_SEC;
+    LOGI("\nface detector time = %f ms\n", totaltime_detector*1000);
+
+    return found;
+}
+
+int loadDB(const char * facesPath){
+    //获取绝对路径
+    if(facesPath == NULL) {
+        return 0;
+    }
+
+    try{
+        std::vector<matrix<rgb_pixel>> faces; // 人脸 裁剪后的人脸
+
+        DIR *pDir = NULL;
+        struct dirent *dmsg;
+        char szFileName[128];
+        char szFolderName[128];
+
+        strcpy(szFolderName, facesPath);
+        strcat(szFolderName, "/%s");
+        if ((pDir = opendir(facesPath)) != NULL) {
+            LOGI("打开 %s 文件夹",facesPath);
+            // 遍历目录
+            while ((dmsg = readdir(pDir)) != NULL) {
+                if (strcmp(dmsg->d_name, ".") != 0 && strcmp(dmsg->d_name, "..") != 0) {
+                    sprintf(szFileName, szFolderName, dmsg->d_name);
+
+                    if (!strcmp(strstr(szFileName, ".") + 1 , "jpg")){
+                        matrix<rgb_pixel> img;
+//                        char path[260];
+                        string fileName = szFileName;
+                        LOGI("文件名 %s",szFileName);
+                        load_image(img, fileName);
+
+                        for (auto face : detector(img, 1)) {
+                            auto shape = pose_model(img, face); // 一个人的人脸特征
+                            matrix<rgb_pixel> face_chip;
+                            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
+                            faces.push_back(move(face_chip));
+                        }
+
+                        LOGI("人脸数 %d", faces.size());
+
+                        if (faces.size() > 0){
+                            std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
+
+                            for(auto item : face_descriptors) {
+                                face_descriptors_db.push_back(item);
+                                face_descriptors_db_label.push_back(dmsg->d_name);
+                            }
+
+                            if (face_descriptors_db.size() < 1) {
+                                LOGI("initFaceDescriptors 获取人脸特征失败");
+                            } else {
+                                LOGI("initFaceDescriptors 获取到人脸特征数:%d",face_descriptors_db.size());
+                            }
+                        }
+                    }
+                }
+            }
         }
 
+        if (pDir != NULL) {
+            closedir(pDir);
+        }
+        initflag_faceDB = true;
+        return 1;
+    } catch (const std::exception &e) {
+
+    } catch (...) {
+
     }
-    if(isRecognition){
-//    if(faces.size() > 0) {
-//        net_faceRecognition(shapes);
-//    }
-    }
+    return 0;
 }
 
 //初始化dlib
@@ -261,7 +342,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
         std::vector<dlib::rectangle> dets = detector(img, 1);
 
         int Max = 0;
-        int area = 0; // 指定话大于一定面值的人脸
+        int area = 0; // 获取最大面值的人脸
         if (dets.size() != 0) {
             for (unsigned long t = 0; t < dets.size(); ++t) {
                 if (area < dets[t].width()*dets[t].height()) {
@@ -374,9 +455,9 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
         return env->NewStringUTF(ret);
     }
     showLine = true;
-    Mat& mRgba = *(Mat*) rgbaAAddr;
-    Mat& mGray = *(Mat*) grayAddr;
-    Mat& mBgr = *(Mat*) bgrAddr;
+//    Mat& mRgba = *(Mat*) rgbaAAddr;
+//    Mat& mGray = *(Mat*) grayAddr;
+//    Mat& mBgr = *(Mat*) bgrAddr;
     Mat& mRgb = *(Mat*) rgbAddr;
     Mat& mDisplay = *(Mat*) displayAddr;
 
@@ -527,7 +608,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
     return 1;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPicture
         (JNIEnv *, jclass, jlong srcAAddr, jlong displayAddr){
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
         LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
@@ -540,25 +621,40 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
     showBox=true;
     Mat& mSrc = *(Mat*) srcAAddr;
     Mat& mDisplay = *(Mat*) displayAddr;
+    mDisplay = mSrc;
 
     LOGD("jnidetect");
 
     int found=0;
     try{
-        // Resize image for face detection
-        matrix<unsigned char> img; // greyscale
-        assign_image(img, cv_image<rgb_pixel>(mSrc));
+        Mat result ;
+        matrix<rgb_pixel> img;
+        cvtColor(mSrc, result, CV_RGBA2RGB);
+        assign_image(img, cv_image<rgb_pixel>(result));
 
-        long start_detector=0.0, start_recognition=0.0, finish=0.0;
+        long start_detector=0, start_recognition=0, finish=0;
         double totaltime_detector=0.0,totaltime_recognition=0.0;
 
         start_detector = clock();
-        std::vector<cv::Rect> boxes;
-        std::vector<matrix<rgb_pixel>> faces; //
-        for (auto face : detector(img, 1)) { // 人脸检测
+        std::vector<matrix<rgb_pixel>> faces; // 人脸 裁剪后的人脸
+//        std::vector<full_object_detection> shapes; // 人脸特征
+        std::vector<cv::Rect> boxes; // 人脸位置框
+        std::vector<dlib::rectangle> detector_faces = detector(img, 1);
+        for (auto face : detector_faces) { // 人脸检测
+//            if(face.width() * face.height() < 150 * 150){
+//                continue;
+//            }
             auto shape = pose_model(img, face); // 提取人脸特征
             matrix<rgb_pixel> face_chip;
-            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip); // 提取裁剪 直立旋转和缩放至标准尺寸的每张脸的副本
+
+            long _time = clock();
+            chip_details chipDetails = get_face_chip_details(shape,150,0.25);
+            LOGI("\nget_face_chip_details time = %f ms\n", ((double)(clock() - _time) / CLOCKS_PER_SEC)*1000);
+
+            _time = clock();
+            extract_image_chip(img, chipDetails, face_chip); // 提取裁剪 直立旋转和缩放至标准尺寸的每张脸的副本
+            LOGI("\nextract_image_chip time = %f ms\n", ((double)(clock() - _time) / CLOCKS_PER_SEC)*1000);
+
             faces.push_back(move(face_chip));
 
             if(showBox) {
@@ -588,7 +684,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
                 for (size_t j = i+1; j < face_descriptors.size(); ++j) {
                     auto thisThreshold = length(face_descriptors[i]-face_descriptors[j]); // 比对结果是一个距离值
                     LOGI("--------------- 比对值:%f \n",thisThreshold);
-                    cv::putText(mDisplay, "对比结果是"+to_string(thisThreshold), cv::Point(boxes[i].x,boxes[i].y-3), cv::FONT_HERSHEY_SIMPLEX, 1, Scalar(181, 127, 255), 2, cv::LINE_AA);
+                    cv::putText(mDisplay, "threshold:"+to_string(thisThreshold), cv::Point(boxes[i].x,boxes[i].y-3), cv::FONT_HERSHEY_SIMPLEX, 1, Scalar(181, 127, 255), 2, cv::LINE_AA);
                     if (thisThreshold < myThreshold){
                         found=1;
                         break;
@@ -612,7 +708,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
 }
 
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
-        (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ){
+        (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ,jstring path){
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
         LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
         return 0;
@@ -624,6 +720,16 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
     if(!initflag_faceDB){
         LOGE("没有初始化 人脸库");
         return 0;
+    }
+    if(face_descriptors_db.size() == 0){
+        //获取绝对路径
+        const char * facesPath = env->GetStringUTFChars(path, 0);
+        if(facesPath == NULL) {
+            return 0;
+        }
+        int r = loadDB(facesPath);
+        env->ReleaseStringUTFChars(path, facesPath);
+        return r;
     }
     showBox=true;
     Mat& mSrc = *(Mat*) srcAAddr;
@@ -638,7 +744,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
         cv::Mat mSrc_small;
         cv::resize(mSrc, mSrc_small, cv::Size(), 1.0/FACE_DOWNSAMPLE_RATIO, 1.0/FACE_DOWNSAMPLE_RATIO);
 
-        matrix<unsigned char> img, img_small; // greyscale
+        matrix<rgb_pixel> img, img_small; // greyscale
         if(formatType == 1){ // rgb
             assign_image(img_small, cv_image<rgb_pixel>(mSrc_small));
             assign_image(img, cv_image<rgb_pixel>(mSrc));
@@ -650,32 +756,41 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
             assign_image(img, cv_image<unsigned char>(mSrc));
         }
 
-        long start_detector=0.0, start_recognition=0.0, finish=0.0;
-        double totaltime_detector=0.0,totaltime_recognition=0.0;
+        long start=0,start_detector=0, start_recognition=0, finish=0;
+        double totaltime=0.0,totaltime_recognition=0.0;
+
+        start = clock();
+
+        std::vector<matrix<rgb_pixel>> faces; // 人脸 裁剪后的人脸
+//        std::vector<full_object_detection> shapes; // 人脸特征
+        std::vector<cv::Rect> boxes; // 人脸位置框
 
         start_detector = clock();
-        std::vector<cv::Rect> boxes;
-        std::vector<matrix<rgb_pixel>> faces; //
-        for (auto face : detector(img_small, 1)) { // 人脸检测
-            auto shape = pose_model(img, face); // 提取人脸特征
+        for (auto face_small : detector(img_small, 1)) { // 人脸检测
+//            if(face_small.width() * face_small.height() * FACE_DOWNSAMPLE_RATIO * FACE_DOWNSAMPLE_RATIO < 150 * 150){
+//                continue;
+//            }
+            auto shape_small = pose_model(img_small, face_small); // 提取人脸特征
             matrix<rgb_pixel> face_chip;
-            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip); // 提取裁剪 直立旋转和缩放至标准尺寸的每张脸的副本
+            extract_image_chip(img_small, get_face_chip_details(shape_small,150,0.25), face_chip); // 提取裁剪 直立旋转和缩放至标准尺寸的每张脸的副本
             faces.push_back(move(face_chip));
 
             if(showBox) {
                 cv::Rect box(0,0,0,0);
-                box.x = face.left() * FACE_DOWNSAMPLE_RATIO;
-                box.y = face.top() * FACE_DOWNSAMPLE_RATIO;
-                box.width = face.width() * FACE_DOWNSAMPLE_RATIO;
-                box.height = face.height() * FACE_DOWNSAMPLE_RATIO;
+                box.x = face_small.left() * FACE_DOWNSAMPLE_RATIO;
+                box.y = face_small.top() * FACE_DOWNSAMPLE_RATIO;
+                box.width = face_small.width() * FACE_DOWNSAMPLE_RATIO;
+                box.height = face_small.height() * FACE_DOWNSAMPLE_RATIO;
                 boxes.push_back(box);
                 cv::rectangle(mDisplay, box, Scalar(255, 0, 0), 2, 8, 0);
             }
         }
         finish = clock();
-        totaltime_detector = (double)(finish - start_detector) / CLOCKS_PER_SEC;
-        LOGI("\nface detector time = %f ms\n", totaltime_detector*1000);
-        if (faces.size() > 0){
+        LOGI("\nface detector time = %f ms\n", ((double)(finish - start_detector) / CLOCKS_PER_SEC)*1000);
+
+        LOGI("faces.size: %d  face_descriptors_db.size: %d\n", faces.size(), face_descriptors_db.size() );
+
+        if (faces.size() > 0 && face_descriptors_db.size() > 0){
             start_recognition = clock();
             std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
 
@@ -705,8 +820,9 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
             totaltime_recognition = (double)(finish - start_recognition) / CLOCKS_PER_SEC;
             LOGI("face recognition time = %f ms\n", totaltime_recognition*1000);
         }
-
-        LOGI("all time = %f ms\n", (totaltime_detector + totaltime_recognition)*1000);
+        finish = clock();
+        totaltime = (double)(finish - start) / CLOCKS_PER_SEC;
+        LOGD("recognition face all time = %f ms\n", totaltime*1000);
 
     } catch (const std::exception &e) {
 
@@ -733,64 +849,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initFaceDescriptors
         return 0;
     }
 
-    try{
-        std::vector<matrix<rgb_pixel>> faces;
-
-        DIR *pDir = NULL;
-        struct dirent *dmsg;
-        char szFileName[128];
-        char szFolderName[128];
-
-        strcpy(szFolderName, facesPath);
-        strcat(szFolderName, "/%s");
-        if ((pDir = opendir(facesPath)) != NULL) {
-            // 遍历目录并删除文件
-            while ((dmsg = readdir(pDir)) != NULL) {
-                if (strcmp(dmsg->d_name, ".") != 0 && strcmp(dmsg->d_name, "..") != 0) {
-                    sprintf(szFileName, szFolderName, dmsg->d_name);
-
-                    if (!strcmp(strstr(szFileName, ".") + 1 , "jpg")){
-                        matrix<rgb_pixel> img;
-                        char path[260];
-                        string fileName = szFileName;
-                        load_image(img, fileName);
-
-                        for (auto face : detector(img, 1)) {
-                            auto shape = pose_model(img, face); // 一个人的人脸特征
-                            matrix<rgb_pixel> face_chip;
-                            extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
-                            faces.push_back(move(face_chip));
-                        }
-
-                        if (faces.size() > 0){
-                            std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
-
-                            for(auto item : face_descriptors) {
-                                face_descriptors_db.push_back(item);
-                                face_descriptors_db_label.push_back(dmsg->d_name);
-                            }
-
-                            if (face_descriptors_db.size() < 1) {
-                                LOGI("initFaceDescriptors 获取人脸特征失败");
-                            } else {
-                                LOGI("initFaceDescriptors 获取到人脸特征数:%d",face_descriptors_db.size());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (pDir != NULL) {
-            closedir(pDir);
-        }
-        initflag_faceDB = true;
-        env->ReleaseStringUTFChars(path, facesPath);
-        return 1;
-    } catch (const std::exception &e) {
-
-    } catch (...) {
-
-    }
-    return 0;
+    int r = loadDB(facesPath);
+    env->ReleaseStringUTFChars(path, facesPath);
+    return r;
 }

@@ -38,7 +38,7 @@ public class Face {
     public native static String landMarks2(long input,long output);
 
     //人脸识别
-    public native static int faceRecognition(long input,long output);
+    public native static int faceRecognitionForPicture(long input,long output);
 
 
     /**
@@ -66,7 +66,7 @@ public class Face {
      * @param displayAddr 要显示
      * @return
      */
-    public native static int faceRecognition(long srcAAddr, int format, long displayAddr);
+    public native static int faceRecognition(long srcAAddr, int format, long displayAddr, String facesPath);
 
     /**
      * 初始化脸部描述符

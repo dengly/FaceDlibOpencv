@@ -88,7 +88,7 @@ public class ImageActivity extends Activity {
                 Mat input = new Mat();
                 Mat output = new Mat();
                 Utils.bitmapToMat(srcBitmap, input);
-                Face.faceRecognition(input.getNativeObjAddr(), output.getNativeObjAddr());
+                Face.faceRecognitionForPicture(input.getNativeObjAddr(), output.getNativeObjAddr());
                 Utils.matToBitmap(output, srcBitmap);
                 long detectTime = System.currentTimeMillis() - detectStime;
                 String detectTimeStr = "人脸识别,耗时:"+ String.valueOf(detectTime) + "ms.";
