@@ -348,7 +348,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
     Mat& outMat = *(Mat*)outPtr;
     outMat = inMat;
 
-    LOGD("jnidetect");
+    LOGD("landMarks2");
 
     long start, finish;
     double totaltime;
@@ -440,7 +440,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
     int formatType = (int)format;
     Mat& mDisplay = *(Mat*) displayAddr;
 
-    LOGD("jnidetect");
+    LOGD("landMarks1");
 
     long start, finish;
     double totaltime;
@@ -492,7 +492,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
     Mat& mRgb = *(Mat*) rgbAddr;
     Mat& mDisplay = *(Mat*) displayAddr;
 
-    LOGD("jnidetect");
+    LOGD("landMarks");
 
     long start, finish;
     double totaltime;
@@ -554,7 +554,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetector
     int formatType = (int)format;
     Mat& mDisplay = *(Mat*) displayAddr;
 
-    LOGD("jnidetect");
+    LOGD("landMarks");
     showBox = true;
     showLine = false;
 
@@ -597,7 +597,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
     int formatType = (int)format;
     Mat& mDisplay = *(Mat*) displayAddr;
 
-    LOGD("jnidetect");
+    LOGD("faceDetectorByDNN");
     showBox = true;
     showLine = false;
 
@@ -671,7 +671,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPic
     Mat& mDisplay = *(Mat*) displayAddr;
     mDisplay = mSrc;
 
-    LOGD("jnidetect");
+    LOGD("faceRecognitionForPicture");
 
     int found=0;
     try{
@@ -793,7 +793,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
     int formatType = (int)format;
     Mat& mDisplay = *(Mat*) displayAddr;
 
-    LOGD("jnidetect");
+    LOGD("faceRecognition");
 
     int found=0;
     try{
