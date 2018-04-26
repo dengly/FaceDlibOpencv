@@ -69,7 +69,7 @@ public class Face {
      * @param displayAddr 要显示
      * @return
      */
-    public native static int faceRecognition(long srcAAddr, int format, long displayAddr, String facesPath, Rect);
+    public native static int faceRecognition(long srcAAddr, int format, long displayAddr, String facesPath);
 
     /**
      * 初始化脸部描述符

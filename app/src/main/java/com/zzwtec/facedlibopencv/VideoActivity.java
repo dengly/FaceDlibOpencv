@@ -22,6 +22,9 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class VideoActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
     private static String TAG = "VideoActivity";
@@ -44,6 +47,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
     private ImageView imageView;
 
     private volatile boolean check=false;
+
+    private ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 
     private JavaCameraView javaCameraView;
     private BaseLoaderCallback baseLoaderCallback = new BaseLoaderCallback(this) {
@@ -105,7 +110,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
             type = intent.getIntExtra("type",1);
         }
 
-        new Thread(new Runnable() {
+        singleThreadExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 if(!initflag){
@@ -125,12 +130,13 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
 
                         Face.initModel(Constants.getFaceRecognitionV1ModelPath(),3);
                         Face.initFaceDescriptors(Constants.getFacePicDirectoryPath());
+                        Face.getMaxFace(1);
                     }
 
                     initflag = true;
                 }
             }
-        }).start();
+        });
     }
 
     @Override
@@ -179,7 +185,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
      */
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        Log.d(TAG, "MainActivity onCameraFrame");
+        Log.d(TAG, "VideoActivity onCameraFrame");
 
         if(initflag){
             if(type == 1){ // 人脸特征标记
@@ -212,24 +218,26 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 final Mat display = mDisplay;
                 if(!check){
                     check = true;
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            int re = Face.faceRecognition(gray.getNativeObjAddr(),3,display.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
-                            if(re>0){
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
-                                        Bitmap srcBitmap = Bitmap.createBitmap(display.width(), display.height(), Bitmap.Config.ARGB_8888);
-                                        Utils.matToBitmap(display, srcBitmap);
-                                        imageView.setImageBitmap(srcBitmap);
+                    singleThreadExecutor.execute(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    int re = Face.faceRecognition(gray.getNativeObjAddr(),3,display.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+                                    if(re>0){
+                                        mHandler.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                                                Bitmap srcBitmap = Bitmap.createBitmap(display.width(), display.height(), Bitmap.Config.ARGB_8888);
+                                                Utils.matToBitmap(display, srcBitmap);
+                                                imageView.setImageBitmap(srcBitmap);
+                                            }
+                                        });
                                     }
-                                });
+                                    check = false;
+                                }
                             }
-                            check = false;
-                        }
-                    }).start();
+                    );
                 }
             }
 
