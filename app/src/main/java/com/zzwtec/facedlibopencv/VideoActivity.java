@@ -75,6 +75,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         mHandler =new Handler();
         imageView = (ImageView) findViewById(R.id.imageView);
         javaCameraView = (JavaCameraView) findViewById(R.id.javaCameraView);
+        javaCameraView.getLayoutParams().width=1280;
+        javaCameraView.getLayoutParams().height=960;
         javaCameraView.setVisibility(SurfaceView.VISIBLE);
         javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
 //        javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK); // 设置打开后置摄像头
