@@ -13,17 +13,6 @@
 #include <dlib/dnn.h>
 #include <dlib/clustering.h>
 
-#define TAG "Dlib-jni" // 这个是自定义的LOG的标识
-#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, TAG, __VA_ARGS__)  // 定义LOGV类型
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,TAG ,__VA_ARGS__) // 定义LOGD类型
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,TAG ,__VA_ARGS__) // 定义LOGI类型
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,TAG ,__VA_ARGS__) // 定义LOGW类型
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,TAG ,__VA_ARGS__) // 定义LOGE类型
-#define LOGF(...) __android_log_print(ANDROID_LOG_FATAL,TAG ,__VA_ARGS__) // 定义LOGF类型
-
-#define FACE_DOWNSAMPLE_RATIO 4
-#define SKIP_FRAMES 2
-
 using namespace dlib;
 using namespace std;
 using namespace cv;
@@ -730,6 +719,8 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPic
         if (faces.size() > 0){
             start_recognition = clock();
             std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
+            long _start = clock();
+            LOGI("人脸特征耗时 %f ms\n", (double)(_start - start_recognition) / CLOCKS_PER_SEC * 1000);
 
             if (face_descriptors.size() < 1) {
                 LOGI("获取人脸特征失败 \n");
@@ -739,8 +730,9 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPic
 
             for (size_t i = 0; i < face_descriptors.size(); ++i) {
                 for (size_t j = i+1; j < face_descriptors.size(); ++j) {
+                    _start = clock();
                     auto thisThreshold = length(face_descriptors[i]-face_descriptors[j]); // 比对结果是一个距离值
-                    LOGI("--------------- 比对值:%f \n",thisThreshold);
+                    LOGI("--------------- 比对值:%f  比对耗时 %f ms\n",thisThreshold, (double)(clock() - _start) / CLOCKS_PER_SEC * 1000);
                     cv::putText(mDisplay, "threshold:"+to_string(thisThreshold), cv::Point(boxes[i].x,boxes[i].y-3), cv::FONT_HERSHEY_SIMPLEX, 1, Scalar(181, 127, 255), 2, cv::LINE_AA);
                     if (thisThreshold < myThreshold){
                         found=1;
@@ -877,6 +869,8 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
         if (faces.size() > 0 && faceDBs.size() > 0){
             start_recognition = clock();
             std::vector<matrix<float, 0, 1>> face_descriptors = net_faceRecognition(faces);
+            long _start = clock();
+            LOGI("人脸特征耗时 %f ms\n", (double)(_start - start_recognition) / CLOCKS_PER_SEC * 1000);
 
             if (face_descriptors.size() < 1) {
                 LOGI("获取人脸特征失败 \n");
@@ -889,8 +883,9 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
             size_t i = 0, j = 0;
             for (; i < face_descriptors.size(); ++i) {
                 for (; j < faceDBs.size(); ++j) {
+                    _start = clock();
                     auto thisThreshold = length(face_descriptors[i]-faceDBs[j].face_descriptors); // 比对结果是一个距离值
-                    LOGI("--------------- 比对值:%f \n",thisThreshold);
+                    LOGI("--------------- 比对值:%f  比对耗时 %f ms\n",thisThreshold, (double)(clock() - _start) / CLOCKS_PER_SEC * 1000);
                     if (thisThreshold < myThreshold){
                         found=1;
                         cv::putText(mDisplay, faceDBs[j].label + " - " + to_string(thisThreshold), cv::Point(boxes[i].x,boxes[i].y-3), cv::FONT_HERSHEY_SIMPLEX, 1, Scalar(181, 127, 255), 2, cv::LINE_AA);

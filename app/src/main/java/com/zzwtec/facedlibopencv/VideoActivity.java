@@ -125,8 +125,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                     }else if(type == 4){ // 人脸检测 通过dnn
                         Face.initModel(Constants.getHumanFaceModelPath(),2);
                     }else if(type == 2 || type == 5){ // 同步人脸识别 异步人脸识别
-                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
-//                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
+//                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
+                        Face.initModel(Constants.getFaceShape68ModelPath(),1);
 
                         Face.initModel(Constants.getFaceRecognitionV1ModelPath(),3);
                         Face.initFaceDescriptors(Constants.getFacePicDirectoryPath());
