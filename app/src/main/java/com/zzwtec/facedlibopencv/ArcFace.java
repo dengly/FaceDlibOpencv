@@ -68,31 +68,35 @@ public class ArcFace {
 
         List<AFD_FSDKFace> result = new ArrayList<AFD_FSDKFace>();
 
-        long time0 = -System.currentTimeMillis();
+        long time0 = -System.nanoTime();
         engine_detection.AFD_FSDK_StillImageFaceDetection(data, width, height, AFD_FSDKEngine.CP_PAF_NV21, result);
-        Log.i(TAG, "虹软 facedetection time: " + (System.currentTimeMillis()+time0)+" ms");
+        double _time0 = (System.nanoTime()+time0) / 1000000.0;
+        Log.i(TAG, "虹软 facedetection time: " + _time0 +" ms");
 
         AFR_FSDKFace face1 = new AFR_FSDKFace();
         AFR_FSDKFace face2 = new AFR_FSDKFace();
 
         //输入的data数据为NV21格式（如Camera里NV21格式的preview数据）；人脸坐标一般使用人脸检测返回的Rect传入；人脸角度请按照人脸检测引擎返回的值传入。
-        long time1 = -System.currentTimeMillis();
+        long time1 = -System.nanoTime();
         engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, result.get(0).getRect(), AFR_FSDKEngine.AFR_FOC_0, face1);
-        Log.i(TAG, "虹软 人脸特征提取 time: " + (System.currentTimeMillis()+time1)+" ms");
+        double _time1 = (System.nanoTime()+time1) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征提取 time: " + _time1 +" ms");
 
-        long time2 = -System.currentTimeMillis();
-        engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, result.get(2).getRect(), AFR_FSDKEngine.AFR_FOC_0, face2);
-        Log.i(TAG, "虹软 人脸特征提取 time: " + (System.currentTimeMillis()+time2)+" ms");
+        long time2 = -System.nanoTime();
+        engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, result.get(1).getRect(), AFR_FSDKEngine.AFR_FOC_0, face2);
+        double _time2 = (System.nanoTime()+time2) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征提取 time: " + _time2 +" ms");
 
-        Log.i(TAG, "虹软 两次人脸特征提取平均耗时 time: " + ((time1+time2)/2)+" ms");
+        Log.i(TAG, "虹软 两次人脸特征提取平均耗时 time: " + ((_time1+_time2)/2)+" ms");
 
         //score用于存放人脸对比的相似度值
         AFR_FSDKMatching score = new AFR_FSDKMatching();
-        long time3 = -System.currentTimeMillis();
+        long time3 = -System.nanoTime();
         engine_recognition.AFR_FSDK_FacePairMatching(face1, face2, score);
-        Log.i(TAG, "虹软 人脸特征比对 time: " + (System.currentTimeMillis()+time3)+" ms");
+        double _time3 = (System.nanoTime()+time3) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征比对 time: " + _time3 +" ms");
         Log.i(TAG, "Score:" + score.getScore());
-        Log.i(TAG, "虹软 总耗时: " + (time0+(time1+time2)/2+time3)+" ms ———— 一次人脸检测、两次人脸特征提取平均耗时、一次人脸特征比对");
+        Log.i(TAG, "虹软 总耗时: " + (_time0+(_time1+_time2)/2+_time3)+" ms ———— 一次人脸检测、两次人脸特征提取平均耗时、一次人脸特征比对");
         return score.getScore();
     }
 
@@ -108,18 +112,20 @@ public class ArcFace {
 
         AFR_FSDKError error;
         //输入的data数据为NV21格式（如Camera里NV21格式的preview数据）；人脸坐标一般使用人脸检测返回的Rect传入；人脸角度请按照人脸检测引擎返回的值传入。
-        long time = -System.currentTimeMillis();
+        long time = -System.nanoTime();
         error = engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, rect, AFR_FSDKEngine.AFR_FOC_0, face);
-        Log.i(TAG, "虹软 人脸特征提取 time: " + (System.currentTimeMillis()+time)+" ms");
+        double _time = (System.nanoTime()+time) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征提取 time: " + _time +" ms");
 
         Log.d(TAG, "Face=" + face.getFeatureData()[0]+ "," + face.getFeatureData()[1] + "," + face.getFeatureData()[2] + "," + error.getCode());
 
         //score用于存放人脸对比的相似度值
         AFR_FSDKMatching score = new AFR_FSDKMatching();
         for(AFR_FSDKFace item : faceList){
-            time = -System.currentTimeMillis();
+            time = -System.nanoTime();
             error = engine_recognition.AFR_FSDK_FacePairMatching(face, item, score);
-            Log.i(TAG, "虹软 人脸特征比对 time: " + (System.currentTimeMillis()+time)+" ms");
+            _time = (System.nanoTime()+time) / 1000000.0;
+            Log.i(TAG, "虹软 人脸特征比对 time: " + _time +" ms");
 
             Log.d(TAG, "Score:" + score.getScore());
             if(score.getScore() > myThreshold){
@@ -137,9 +143,10 @@ public class ArcFace {
         List<AFD_FSDKFace> result = new ArrayList<AFD_FSDKFace>();
 
         //输入的data数据为NV21格式（如Camera里NV21格式的preview数据），其中height不能为奇数，人脸检测返回结果保存在result。
-        long time = -System.currentTimeMillis();
+        long time = -System.nanoTime();
         AFD_FSDKError err = engine_detection.AFD_FSDK_StillImageFaceDetection(data, width, height, AFD_FSDKEngine.CP_PAF_NV21, result);
-        Log.i(TAG, "虹软 facedetection time: " + (System.currentTimeMillis()+time)+" ms");
+        double _time = (System.nanoTime()+time) / 1000000.0;
+        Log.i(TAG, "虹软 facedetection time: " + _time +" ms");
         
         Log.d(TAG, "AFD_FSDK_StillImageFaceDetection =" + err.getCode());
         Log.d(TAG, "Face=" + result.size());
@@ -159,23 +166,26 @@ public class ArcFace {
 
         AFR_FSDKError error;
         //输入的data数据为NV21格式（如Camera里NV21格式的preview数据）；人脸坐标一般使用人脸检测返回的Rect传入；人脸角度请按照人脸检测引擎返回的值传入。
-        long time = -System.currentTimeMillis();
+        long time = -System.nanoTime();
         error = engine_recognition.AFR_FSDK_ExtractFRFeature(data1, width, height, AFR_FSDKEngine.CP_PAF_NV21, new Rect(210, 178, 478, 446), AFR_FSDKEngine.AFR_FOC_0, face1);
-        Log.i(TAG, "虹软 人脸特征提取 time: " + (System.currentTimeMillis()+time)+" ms");
+        double _time = (System.nanoTime()+time) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征提取 time: " + _time +" ms");
 
         Log.d(TAG, "Face=" + face1.getFeatureData()[0]+ "," + face1.getFeatureData()[1] + "," + face1.getFeatureData()[2] + "," + error.getCode());
 
-        time = -System.currentTimeMillis();
+        time = -System.nanoTime();
         error = engine_recognition.AFR_FSDK_ExtractFRFeature(data1, width, height, AFR_FSDKEngine.CP_PAF_NV21, new Rect(210, 170, 470, 440), AFR_FSDKEngine.AFR_FOC_0, face2);
-        Log.i(TAG, "虹软 人脸特征提取 time: " + (System.currentTimeMillis()+time)+" ms");
+        _time = (System.nanoTime()+time) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征提取 time: " + _time +" ms");
 
         Log.d(TAG, "Face=" + face2.getFeatureData()[0]+ "," + face2.getFeatureData()[1] + "," + face2.getFeatureData()[2] + "," + error.getCode());
 
         //score用于存放人脸对比的相似度值
         AFR_FSDKMatching score = new AFR_FSDKMatching();
-        time = -System.currentTimeMillis();
+        time = -System.nanoTime();
         error = engine_recognition.AFR_FSDK_FacePairMatching(face1, face2, score);
-        Log.i(TAG, "虹软 人脸特征比对 time: " + (System.currentTimeMillis()+time)+" ms");
+        _time = (System.nanoTime()+time) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征比对 time: " + _time +" ms");
 
         Log.d(TAG, "AFR_FSDK_FacePairMatching=" + error.getCode());
         Log.d(TAG, "Score:" + score.getScore());

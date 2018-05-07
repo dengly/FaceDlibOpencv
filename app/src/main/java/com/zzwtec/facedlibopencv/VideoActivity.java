@@ -48,6 +48,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
 
     private volatile boolean check=false;
 
+    private ArcFace mArcFace;
+
     private ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 
     private JavaCameraView javaCameraView;
@@ -137,12 +139,24 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                         Face.initModel(Constants.getFaceRecognitionV1ModelPath(),3);
                         Face.initFaceDescriptors(Constants.getFacePicDirectoryPath());
                         Face.getMaxFace(1);
+                    }else if(type == 6 || type == 7){ // 虹软视频人脸同步识别  虹软视频人脸异步识别
+                        if(mArcFace==null){
+                            mArcFace = new ArcFace();
+                        }
                     }
 
                     initflag = true;
                 }
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mArcFace != null){
+            mArcFace.destroy();
+        }
     }
 
     @Override

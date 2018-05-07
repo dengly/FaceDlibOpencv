@@ -84,7 +84,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        arcRecognition_button = (Button) findViewById(R.id.recognition_button);
+        arcRecognition_button = (Button) findViewById(R.id.arcRecognition_button);
         arcRecognition_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

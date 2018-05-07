@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -77,7 +78,11 @@ public class ImageActivity extends Activity {
                 if(mArcFace == null){
                     mArcFace = new ArcFace();
                 }
-                mArcFace.facedetectionForImage(img.getDrawingCache());
+                if(srcBitmap==null){
+                    srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test);
+                }
+                float score = mArcFace.facedetectionForImage(srcBitmap);
+                Toast.makeText(getApplicationContext(),"相似度是 "+(score * 100)+"%",Toast.LENGTH_LONG);
             }
         }).start();
     }

@@ -36,8 +36,15 @@ android {
     packagingOptions {
         exclude "jniLibs/armeabi-v7a/libnative-lib.so"
         exclude "jniLibs/armeabi-v7a/libopencv_java3.so"
+        exclude "jniLibs/armeabi-v7a/libArcSoft_FDEngine.so"
+        exclude "jniLibs/armeabi-v7a/libArcSoft_FREngine.so"
+        exclude "jniLibs/armeabi-v7a/libmpbase.so"
+
         exclude "jniLibs/armeabi/libnative-lib.so"
         exclude "jniLibs/armeabi/libopencv_java3.so"
+        exclude "jniLibs/armeabi/libArcSoft_FDEngine.so"
+        exclude "jniLibs/armeabi/libArcSoft_FREngine.so"
+        exclude "jniLibs/armeabi/libmpbase.so"
     }
 }
 
