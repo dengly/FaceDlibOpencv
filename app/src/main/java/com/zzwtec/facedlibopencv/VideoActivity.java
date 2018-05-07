@@ -141,8 +141,9 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                         Face.getMaxFace(1);
                     }else if(type == 6 || type == 7){ // 虹软视频人脸同步识别  虹软视频人脸异步识别
                         if(mArcFace==null){
-                            mArcFace = new ArcFace();
+                            mArcFace = new ArcFace(16,1);
                         }
+                        mArcFace.initDB(Constants.getFacePicDirectoryPath());
                     }
 
                     initflag = true;
@@ -260,9 +261,30 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                     );
                 }
             }else if(type == 6){ // 虹软视频人脸同步识别
-
+                mGray = inputFrame.gray();
+                Bitmap srcBitmap = Bitmap.createBitmap(mGray.width(), mGray.height(), Bitmap.Config.ARGB_8888);
+                Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+                Utils.matToBitmap(mGray,srcBitmap);
+                float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
+                Utils.bitmapToMat(displayBitmap,mDisplay);
             }else if(type == 7){ // 虹软视频人脸异步识别
-
+                mGray = inputFrame.gray();
+                if(!check){
+                    check = true;
+                    singleThreadExecutor.execute(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    Bitmap srcBitmap = Bitmap.createBitmap(mGray.width(), mGray.height(), Bitmap.Config.ARGB_8888);
+                                    Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+                                    Utils.matToBitmap(mGray,srcBitmap);
+                                    final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
+                                    Utils.bitmapToMat(displayBitmap,mDisplay);
+                                    check = false;
+                                }
+                            }
+                    );
+                }
             }
 
             return mDisplay;

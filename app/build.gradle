@@ -38,12 +38,14 @@ android {
         exclude "jniLibs/armeabi-v7a/libopencv_java3.so"
         exclude "jniLibs/armeabi-v7a/libArcSoft_FDEngine.so"
         exclude "jniLibs/armeabi-v7a/libArcSoft_FREngine.so"
+        exclude "jniLibs/armeabi-v7a/libArcSoft_FTEngine.so"
         exclude "jniLibs/armeabi-v7a/libmpbase.so"
 
         exclude "jniLibs/armeabi/libnative-lib.so"
         exclude "jniLibs/armeabi/libopencv_java3.so"
         exclude "jniLibs/armeabi/libArcSoft_FDEngine.so"
         exclude "jniLibs/armeabi/libArcSoft_FREngine.so"
+        exclude "jniLibs/armeabi/libArcSoft_FTEngine.so"
         exclude "jniLibs/armeabi/libmpbase.so"
     }
 }
@@ -58,5 +60,6 @@ dependencies {
     implementation project(':openCVLibrary341')
     implementation files('libs/facedetection.jar')
     implementation files('libs/facerecognition.jar')
+    implementation files('libs/facetracking.jar')
     implementation 'com.guo.android_extend:android-extend:1.0.5'
 }

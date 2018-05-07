@@ -76,15 +76,18 @@ public class ImageActivity extends Activity {
             @Override
             public void run() {
                 if(mArcFace == null){
-                    mArcFace = new ArcFace();
+                    mArcFace = new ArcFace(16,2);
                 }
                 if(srcBitmap==null){
                     srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test);
                 }
-                final float score = mArcFace.facedetectionForImage(srcBitmap);
-                mHandler.post(new Runnable(){
+
+                final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+                final float score = mArcFace.facedetectionForImage(srcBitmap,displayBitmap);
+                runOnUiThread(new Runnable(){
                     @Override
                     public void run() {
+                        img.setImageBitmap(displayBitmap);
                         Toast.makeText(getApplicationContext(),"相似度是 "+(score * 100)+"%",Toast.LENGTH_LONG);
                     }
                 });
