@@ -265,8 +265,12 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 Bitmap srcBitmap = Bitmap.createBitmap(mRgb.width(), mRgb.height(), Bitmap.Config.ARGB_8888);
                 Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
                 Utils.matToBitmap(mRgb,srcBitmap);
-                float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                Utils.bitmapToMat(displayBitmap,mDisplay);
+                final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
+                if(score==0){
+                    mDisplay = mRgb;
+                }else{
+                    Utils.bitmapToMat(displayBitmap,mDisplay);
+                }
             }else if(type == 7){ // 虹软视频人脸异步识别
                 mRgb = inputFrame.rgb();
                 if(!check){
@@ -279,7 +283,11 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                                     Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
                                     Utils.matToBitmap(mRgb,srcBitmap);
                                     final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                                    Utils.bitmapToMat(displayBitmap,mDisplay);
+                                    if(score==0){
+                                        mDisplay = mRgb;
+                                    }else{
+                                        Utils.bitmapToMat(displayBitmap,mDisplay);
+                                    }
                                     check = false;
                                 }
                             }
