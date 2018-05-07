@@ -109,7 +109,11 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         Intent intent = getIntent();
         //从Intent当中根据key取得value
         if (intent != null) {
-            type = intent.getIntExtra("type",1);
+            int tempType = intent.getIntExtra("type",1);
+            if(type != tempType){
+                type = tempType;
+                initflag = false;
+            }
         }
 
         singleThreadExecutor.execute(new Runnable() {
@@ -241,6 +245,10 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                             }
                     );
                 }
+            }else if(type == 6){ // 虹软视频人脸同步识别
+
+            }else if(type == 7){ // 虹软视频人脸异步识别
+
             }
 
             return mDisplay;

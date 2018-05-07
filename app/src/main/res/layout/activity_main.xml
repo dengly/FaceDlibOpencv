@@ -17,6 +17,12 @@
         android:text="图片人脸识别"/>
 
     <Button
+        android:id="@+id/arcRecognition_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="虹软图片人脸识别"/>
+
+    <Button
         android:id="@+id/video_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -45,5 +51,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="视频人脸异步识别"/>
+
+    <Button
+        android:id="@+id/video_arc_recognition_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="虹软视频人脸同步识别"/>
+
+    <Button
+        android:id="@+id/video_arc_recognition_asyn_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="虹软视频人脸异步识别"/>
 
 </LinearLayout>

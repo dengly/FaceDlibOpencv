@@ -21,9 +21,10 @@ public class ImageActivity extends Activity {
     private Handler mHandler;
     private static String TAG = "ImageActivity";
 
+    private ArcFace mArcFace;
+
     @Override
-    public void onResume()
-    {
+    public void onResume() {
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
 
@@ -55,7 +56,30 @@ public class ImageActivity extends Activity {
             callFaceLandmark();
         }else if(type == 2){ // 人脸识别
             callFaceRecognition();
+        }else if(type == 3){ // 虹软图片人脸识别
+            arcFace();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mArcFace != null){
+            mArcFace.destroy();
+        }
+    }
+
+    // 虹软图片人脸识别
+    private void arcFace(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(mArcFace == null){
+                    mArcFace = new ArcFace();
+                }
+                mArcFace.facedetectionForImage(img.getDrawingCache());
+            }
+        }).start();
     }
 
     //68点检测

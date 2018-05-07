@@ -13,7 +13,7 @@ import org.opencv.android.OpenCVLoader;
 
 public class MainActivity extends Activity {
 
-    private Button bt, recognitionbt, videoBt, videoRecognitionBt, videoDetectorBt, videoDetectorDnnBt, videoRecognitionAsynBt;
+    private Button bt, recognitionbt, videoBt, videoRecognitionBt, videoDetectorBt, videoDetectorDnnBt, videoRecognitionAsynBt, arcRecognition_button, video_arc_recognition_button, video_arc_recognition_asyn_button;
     private Handler mHandler;
     private Boolean initflag = false;
     private static String TAG = "MainActivity";
@@ -35,16 +35,41 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mHandler =new Handler();
-        bt = (Button) findViewById(R.id.button);
 
         final Context mContext = getApplicationContext();
+        initImageBtn(mContext);
+        initVideoBtn(mContext);
 
-        videoBt = (Button) findViewById(R.id.video_button);
-        videoBt.setOnClickListener(new View.OnClickListener() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG,"copy file ...");
+                Face.FaceModelFileUtils.copyFaceRecognitionV1ModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyFaceShape5ModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyFaceShape68ModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyHumanFaceModelFile(getApplicationContext());
+                Face.FaceModelFileUtils.copyFacePicFile(getApplicationContext());
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        bt.setVisibility(View.VISIBLE);
+                        videoBt.setVisibility(View.VISIBLE);
+                        videoRecognitionBt.setVisibility(View.VISIBLE);
+                    }
+                });
+                Log.d(TAG,"copy file over");
+            }
+        }).start();
+    }
+
+    private void initImageBtn(final Context mContext){
+
+        bt = (Button) findViewById(R.id.button);
+        bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
-                intent.putExtra("type",1); // 人脸特征标记
+                Intent intent = new Intent(mContext, ImageActivity.class);
+                intent.putExtra("type",1); // 人脸检测并标记特征点
                 startActivity(intent);
             }
         });
@@ -59,11 +84,25 @@ public class MainActivity extends Activity {
             }
         });
 
-        bt.setOnClickListener(new View.OnClickListener() {
+        arcRecognition_button = (Button) findViewById(R.id.recognition_button);
+        arcRecognition_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(mContext, ImageActivity.class);
-                intent.putExtra("type",1); // 人脸检测并标记特征点
+                intent.putExtra("type",3); // 虹软图片人脸识别
+                startActivity(intent);
+            }
+        });
+
+    }
+
+    private void initVideoBtn(final Context mContext){
+        videoBt = (Button) findViewById(R.id.video_button);
+        videoBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, VideoActivity.class);
+                intent.putExtra("type",1); // 人脸特征标记
                 startActivity(intent);
             }
         });
@@ -107,28 +146,25 @@ public class MainActivity extends Activity {
             }
         });
 
-        bt.setVisibility(View.GONE);
-        videoBt.setVisibility(View.GONE);
-        videoRecognitionBt.setVisibility(View.GONE);
-        new Thread(new Runnable() {
+        video_arc_recognition_button = (Button) findViewById(R.id.video_arc_recognition_button);
+        video_arc_recognition_button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void run() {
-                Log.d(TAG,"copy file ...");
-                Face.FaceModelFileUtils.copyFaceRecognitionV1ModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyFaceShape5ModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyFaceShape68ModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyHumanFaceModelFile(getApplicationContext());
-                Face.FaceModelFileUtils.copyFacePicFile(getApplicationContext());
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        bt.setVisibility(View.VISIBLE);
-                        videoBt.setVisibility(View.VISIBLE);
-                        videoRecognitionBt.setVisibility(View.VISIBLE);
-                    }
-                });
-                Log.d(TAG,"copy file over");
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, VideoActivity.class);
+                intent.putExtra("type",6); // 虹软视频人脸同步识别
+                startActivity(intent);
             }
-        }).start();
+        });
+
+        video_arc_recognition_asyn_button = (Button) findViewById(R.id.video_arc_recognition_asyn_button);
+        video_arc_recognition_asyn_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, VideoActivity.class);
+                intent.putExtra("type",7); // 虹软视频人脸异步识别
+                startActivity(intent);
+            }
+        });
+
     }
 }
