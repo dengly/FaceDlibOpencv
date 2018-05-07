@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.Log;
@@ -41,6 +42,8 @@ public class ArcFace {
 
     private static boolean initDB = false;
     private static final float myThreshold = 0.5f ; //人脸识别相似度值的决策阈值
+
+    private static final int FACE_DOWNSAMPLE_RATIO = 4;
 
     private FaceDB faceDB;
 
@@ -258,6 +261,30 @@ public class ArcFace {
     }
 
     /**
+     * 缩放图
+     * @param mBitmap
+     * @param scale
+     * @return
+     */
+    private Bitmap scaleBitmap(Bitmap mBitmap,float scale){
+        // 获得图片的宽高
+        int width = mBitmap.getWidth();
+        int height = mBitmap.getHeight();
+        // 设置想要的大小
+        float newWidth = width * scale;
+        float newHeight = height * scale;
+        // 计算缩放比例
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // 取得想要缩放的matrix参数
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);
+        // 得到新的图片
+        return Bitmap.createBitmap(mBitmap, 0, 0, width, height, matrix,
+                true);
+    }
+
+    /**
      * 人脸识别
      */
     public float facerecognitionByDB(Bitmap mBitmap, Bitmap displayBitmap){
@@ -265,9 +292,13 @@ public class ArcFace {
             displayBitmap = mBitmap;
             return 0;
         }
-        byte[] data = getBitmapData(mBitmap);
-        int width = mBitmap.getWidth();
-        int height = mBitmap.getHeight();
+        Bitmap smallBitmap = mBitmap; // 缩小图片
+        if(FACE_DOWNSAMPLE_RATIO!=1){
+            smallBitmap = scaleBitmap(mBitmap,1.0f/FACE_DOWNSAMPLE_RATIO); // 缩小图片
+        }
+        byte[] data = getBitmapData(smallBitmap);
+        int width = smallBitmap.getWidth();
+        int height = smallBitmap.getHeight();
 
         // 用来存放检测到的人脸信息列表
         List<AFD_FSDKFace> result_FD = new ArrayList<>();
@@ -289,31 +320,38 @@ public class ArcFace {
         int maxArea = maxRect.width() * maxRect.height();
         for(int i=1; i < result_FD.size(); i++){
             AFD_FSDKFace item = result_FD.get(i);
-            int area = item.getRect().width() * item.getRect().height();
+            Rect itemRect = item.getRect();
+            int area = itemRect.width() * itemRect.height();
             if(maxArea < area){
                 maxArea = area;
-                maxRect = item.getRect();
+                maxRect = itemRect;
             }
         }
 
         //用来存放提取到的人脸信息, face_1是注册的人脸，face_2是要识别的人脸
         AFR_FSDKFace face = new AFR_FSDKFace();
 
-        AFR_FSDKError error;
         //输入的data数据为NV21格式（如Camera里NV21格式的preview数据）；人脸坐标一般使用人脸检测返回的Rect传入；人脸角度请按照人脸检测引擎返回的值传入。
         long time = -System.nanoTime();
-        error = engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, maxRect, AFR_FSDKEngine.AFR_FOC_0, face);
+        error_FR = engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, maxRect, AFR_FSDKEngine.AFR_FOC_0, face);
         double _time = (System.nanoTime()+time) / 1000000.0;
         Log.i(TAG, "虹软 人脸特征提取 time: " + _time +" ms");
 
-        Log.d(TAG, "Face=" + face.getFeatureData()[0]+ "," + face.getFeatureData()[1] + "," + face.getFeatureData()[2] + "," + error.getCode());
+        Log.d(TAG, "Face=" + face.getFeatureData()[0]+ "," + face.getFeatureData()[1] + "," + face.getFeatureData()[2] + "," + error_FR.getCode());
+
+        if(FACE_DOWNSAMPLE_RATIO!=1){
+            for(AFD_FSDKFace item : result_FD){
+                Rect itemRect = item.getRect();
+                itemRect.set(itemRect.left * FACE_DOWNSAMPLE_RATIO, itemRect.top * FACE_DOWNSAMPLE_RATIO, itemRect.right * FACE_DOWNSAMPLE_RATIO, itemRect.bottom * FACE_DOWNSAMPLE_RATIO);
+            }
+        }
 
         //score用于存放人脸对比的相似度值
         AFR_FSDKMatching score = new AFR_FSDKMatching();
         for(int i=0; i<faceDB.getFaceList().size(); i++ ){
             AFR_FSDKFace item = faceDB.getFaceList().get(i);
             time = -System.nanoTime();
-            error = engine_recognition.AFR_FSDK_FacePairMatching(face, item, score);
+            error_FR = engine_recognition.AFR_FSDK_FacePairMatching(face, item, score);
             _time = (System.nanoTime()+time) / 1000000.0;
             Log.i(TAG, "虹软 人脸特征比对 time: " + _time +" ms");
 
