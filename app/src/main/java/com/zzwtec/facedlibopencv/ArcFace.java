@@ -42,7 +42,25 @@ public class ArcFace {
     private static boolean initDB = false;
     private static final float myThreshold = 0.5f ; //人脸识别相似度值的决策阈值
 
-    private static final List<AFR_FSDKFace> faceList = new ArrayList<>();
+    private FaceDB faceDB;
+
+    class FaceDB{
+        private final List<AFR_FSDKFace> faceList ;
+        private final List<String> tagList ;
+
+        public FaceDB(){
+            faceList = new ArrayList<>();
+            tagList = new ArrayList<>();
+        }
+
+        public List<AFR_FSDKFace> getFaceList() {
+            return faceList;
+        }
+
+        public List<String> getTagList() {
+            return tagList;
+        }
+    }
 
     public ArcFace(){
         this(16, 5);
@@ -51,6 +69,7 @@ public class ArcFace {
         engine_detection = new AFD_FSDKEngine();
         engine_recognition = new AFR_FSDKEngine();
         engine_tracking = new AFT_FSDKEngine();
+        faceDB = new FaceDB();
 
         //初始化人脸检测引擎，使用时请替换申请的APPID和SDKKEY
         AFD_FSDKError error_FD = engine_detection.AFD_FSDK_InitialFaceEngine(appid,sdkkey_FD, AFD_FSDKEngine.AFD_OPF_0_HIGHER_EXT, scale, maxFaceNum);
@@ -65,6 +84,10 @@ public class ArcFace {
         Log.d("com.arcsoft", "AFT_FSDK_InitialFaceEngine =" + error_FT.getCode());
     }
 
+    /**
+     * 初始化人脸特征库
+     * @param path
+     */
     public void initDB(String path){
         File root = new File(path);
         if(root.isDirectory()){
@@ -75,7 +98,8 @@ public class ArcFace {
                         Bitmap bitmap = BitmapFactory.decodeFile(item.getAbsolutePath());
                         AFR_FSDKFace face = getFace(bitmap);
                         if(face!=null){
-                            faceList.add(face);
+                            faceDB.getFaceList().add(face);
+                            faceDB.getTagList().add(item.getName().substring(0,item.getName().indexOf(".")));
                         }
                     }
                 }
@@ -84,6 +108,11 @@ public class ArcFace {
         initDB = true;
     }
 
+    /**
+     * 获取人脸特征
+     * @param bitmap
+     * @return
+     */
     public AFR_FSDKFace getFace(Bitmap bitmap){
         byte[] data = getBitmapData(bitmap);
         int width = bitmap.getWidth();
@@ -112,6 +141,11 @@ public class ArcFace {
         return face;
     }
 
+    /**
+     *
+     * @param bitmap
+     * @return
+     */
     private byte[] getBitmapData(Bitmap bitmap){
         byte[] data = new byte[bitmap.getWidth() * bitmap.getHeight() * 3 / 2];
         ImageConverter convert = new ImageConverter();
@@ -189,6 +223,12 @@ public class ArcFace {
         return score.getScore();
     }
 
+    /**
+     * 画线
+     * @param mBitmap
+     * @param displayBitmap
+     * @param face
+     */
     private void draw(Bitmap mBitmap, Bitmap displayBitmap, AFD_FSDKFace face){
         List<AFD_FSDKFace> result_FD = new ArrayList<>();
         result_FD.add(face);
@@ -201,6 +241,7 @@ public class ArcFace {
         Canvas canvas = new Canvas(displayBitmap);
         canvas.drawBitmap(mBitmap,0,0,null);
         Paint paint = new Paint();
+        paint.setStrokeWidth(6);
         paint.setColor(Color.RED);
         for(AFD_FSDKFace item : result_FD){
             canvas.drawLine(item.getRect().left,item.getRect().top,item.getRect().left,item.getRect().bottom,paint);
@@ -210,9 +251,9 @@ public class ArcFace {
         }
         if(tips!=null){
             Paint textPaint = new Paint();//设置画笔
-            textPaint.setTextSize(24.0f);//字体大小
+            textPaint.setTextSize(56.0f);//字体大小
             textPaint.setColor(Color.GREEN);//采用的颜色
-            canvas.drawText(tips,result_FD.get(tipsIndex).getRect().left,result_FD.get(tipsIndex).getRect().top-26,textPaint);
+            canvas.drawText(tips,result_FD.get(tipsIndex).getRect().left,result_FD.get(tipsIndex).getRect().top-10,textPaint);
         }
     }
 
@@ -269,7 +310,8 @@ public class ArcFace {
 
         //score用于存放人脸对比的相似度值
         AFR_FSDKMatching score = new AFR_FSDKMatching();
-        for(AFR_FSDKFace item : faceList){
+        for(int i=0; i<faceDB.getFaceList().size(); i++ ){
+            AFR_FSDKFace item = faceDB.getFaceList().get(i);
             time = -System.nanoTime();
             error = engine_recognition.AFR_FSDK_FacePairMatching(face, item, score);
             _time = (System.nanoTime()+time) / 1000000.0;
@@ -278,7 +320,7 @@ public class ArcFace {
             Log.d(TAG, "Score:" + score.getScore());
             if(score.getScore() > myThreshold){
 
-                draw(mBitmap, displayBitmap, result_FD, "threshold:"+score.getScore(), 0);
+                draw(mBitmap, displayBitmap, result_FD, faceDB.getTagList().get(i)+" threshold:"+score.getScore(), 0);
                 return score.getScore();
             }
         }

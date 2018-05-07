@@ -261,23 +261,23 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                     );
                 }
             }else if(type == 6){ // 虹软视频人脸同步识别
-                mGray = inputFrame.gray();
-                Bitmap srcBitmap = Bitmap.createBitmap(mGray.width(), mGray.height(), Bitmap.Config.ARGB_8888);
+                mRgb = inputFrame.rgb();
+                Bitmap srcBitmap = Bitmap.createBitmap(mRgb.width(), mRgb.height(), Bitmap.Config.ARGB_8888);
                 Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
-                Utils.matToBitmap(mGray,srcBitmap);
+                Utils.matToBitmap(mRgb,srcBitmap);
                 float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
                 Utils.bitmapToMat(displayBitmap,mDisplay);
             }else if(type == 7){ // 虹软视频人脸异步识别
-                mGray = inputFrame.gray();
+                mRgb = inputFrame.rgb();
                 if(!check){
                     check = true;
                     singleThreadExecutor.execute(
                             new Runnable() {
                                 @Override
                                 public void run() {
-                                    Bitmap srcBitmap = Bitmap.createBitmap(mGray.width(), mGray.height(), Bitmap.Config.ARGB_8888);
+                                    Bitmap srcBitmap = Bitmap.createBitmap(mRgb.width(), mRgb.height(), Bitmap.Config.ARGB_8888);
                                     Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
-                                    Utils.matToBitmap(mGray,srcBitmap);
+                                    Utils.matToBitmap(mRgb,srcBitmap);
                                     final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
                                     Utils.bitmapToMat(displayBitmap,mDisplay);
                                     check = false;
