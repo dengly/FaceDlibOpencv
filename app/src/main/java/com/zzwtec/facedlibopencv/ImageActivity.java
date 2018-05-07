@@ -81,8 +81,13 @@ public class ImageActivity extends Activity {
                 if(srcBitmap==null){
                     srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test);
                 }
-                float score = mArcFace.facedetectionForImage(srcBitmap);
-                Toast.makeText(getApplicationContext(),"相似度是 "+(score * 100)+"%",Toast.LENGTH_LONG);
+                final float score = mArcFace.facedetectionForImage(srcBitmap);
+                mHandler.post(new Runnable(){
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),"相似度是 "+(score * 100)+"%",Toast.LENGTH_LONG);
+                    }
+                });
             }
         }).start();
     }
