@@ -334,8 +334,8 @@ public class ArcFace {
         //输入的data数据为NV21格式（如Camera里NV21格式的preview数据）；人脸坐标一般使用人脸检测返回的Rect传入；人脸角度请按照人脸检测引擎返回的值传入。
         long time = -System.nanoTime();
         error_FR = engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, maxRect, AFR_FSDKEngine.AFR_FOC_0, face);
-        double _time = (System.nanoTime()+time) / 1000000.0;
-        Log.i(TAG, "虹软 人脸特征提取 time: " + _time +" ms");
+        double _time1 = (System.nanoTime()+time) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征提取 time: " + _time1 +" ms");
 
         Log.d(TAG, "Face=" + face.getFeatureData()[0]+ "," + face.getFeatureData()[1] + "," + face.getFeatureData()[2] + "," + error_FR.getCode());
 
@@ -352,12 +352,12 @@ public class ArcFace {
             AFR_FSDKFace item = faceDB.getFaceList().get(i);
             time = -System.nanoTime();
             error_FR = engine_recognition.AFR_FSDK_FacePairMatching(face, item, score);
-            _time = (System.nanoTime()+time) / 1000000.0;
-            Log.i(TAG, "虹软 人脸特征比对 time: " + _time +" ms");
+            double _time2 = (System.nanoTime()+time) / 1000000.0;
+            Log.i(TAG, "虹软 人脸特征比对 time: " + _time2 +" ms");
 
             Log.d(TAG, "Score:" + score.getScore());
             if(score.getScore() > myThreshold){
-
+                Log.i(TAG, "虹软 总耗时: " + (_time0+_time1+_time2)+" ms ———— 一次人脸检测、一次人脸特征提取、一次人脸特征比对");
                 draw(mBitmap, displayBitmap, result_FD, faceDB.getTagList().get(i)+" threshold:"+score.getScore(), 0);
                 return score.getScore();
             }

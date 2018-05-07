@@ -273,20 +273,25 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 }
             }else if(type == 7){ // 虹软视频人脸异步识别
                 mRgb = inputFrame.rgb();
+                mDisplay = mRgb;
                 if(!check){
                     check = true;
                     singleThreadExecutor.execute(
                             new Runnable() {
                                 @Override
                                 public void run() {
-                                    Bitmap srcBitmap = Bitmap.createBitmap(mRgb.width(), mRgb.height(), Bitmap.Config.ARGB_8888);
-                                    Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+                                    final Bitmap srcBitmap = Bitmap.createBitmap(mRgb.width(), mRgb.height(), Bitmap.Config.ARGB_8888);
+                                    final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
                                     Utils.matToBitmap(mRgb,srcBitmap);
                                     final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                                    if(score==0){
-                                        mDisplay = mRgb;
-                                    }else{
-                                        Utils.bitmapToMat(displayBitmap,mDisplay);
+                                    if(score > 0){
+                                        mHandler.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                                                imageView.setImageBitmap(displayBitmap);
+                                            }
+                                        });
                                     }
                                     check = false;
                                 }
