@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.zzwtec.facedlibopencv"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -61,5 +61,5 @@ dependencies {
     implementation files('libs/facedetection.jar')
     implementation files('libs/facerecognition.jar')
     implementation files('libs/facetracking.jar')
-    implementation 'com.guo.android_extend:android-extend:1.0.5'
+    implementation 'com.guo.android_extend:android-extend:1.0.1'
 }
