@@ -1,9 +1,12 @@
 # FaceDlibOpencv
-本项目基于 [OpenCV](https://opencv.org) 和 [Dlib](http://dlib.net) 的图片、视频人脸检测和人脸识别
+本项目基于 [OpenCV](https://opencv.org) 和 [Dlib](http://dlib.net) 的图片、视频人脸检测和人脸识别，同时也集成了虹软的ArcFace。
+
+> 如果github同步慢，也可以到 https://gitee.com/dengly/FaceDlibOpencv 同步。
 
 ## 版本
 * [OpenCV 3.4.1](https://opencv.org/opencv-3-4-1.html) 的 Android SDK
 * [Dlib 19.10](http://dlib.net/files/dlib-19.10.tar.bz2)
+* [虹软 ArcFace v1.1](http://www.arcsoft.com.cn/ai/arcface.html) 的 Android SDK
 
 ## 说明
 * 算法模型存放在SD卡的```model```文件夹下，可以通过修改```com.zzwtec.facedlibopencv.Constants```
