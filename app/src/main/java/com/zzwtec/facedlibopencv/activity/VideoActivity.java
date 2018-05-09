@@ -254,16 +254,18 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 mGray = inputFrame.gray();
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
-                Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
-                        Utils.matToBitmap(mDisplay, srcBitmap);
-                        imageView.setImageBitmap(srcBitmap);
-                    }
-                });
+                int re = Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+                if(re>0){
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                            Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
+                            Utils.matToBitmap(mDisplay, srcBitmap);
+                            imageView.setImageBitmap(srcBitmap);
+                        }
+                    });
+                }
             }else if(type == 5){ //异步人脸识别
                 mGray = inputFrame.gray();
                 mRgb = inputFrame.rgb();
