@@ -68,6 +68,9 @@ float myThreshold = 0.5 ; //人脸识别的决策阈值
 
 int checkFace = 0;
 
+int FACE_DOWNSAMPLE_RATIO = 4;
+int SKIP_FRAMES = 2;
+
 struct FaceDB{
     matrix<float, 0, 1> face_descriptors;
     string label;
@@ -259,7 +262,7 @@ int loadDB(const char * facesPath){
 }
 
 //初始化dlib
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initModel
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_initModel
         (JNIEnv *env, jclass jobject, jstring path, jint type) {
     //获取绝对路径
     const char * modelpath = env->GetStringUTFChars(path, 0);
@@ -306,25 +309,35 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initModel
     return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_showBox
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_showBox
         (JNIEnv * env, jclass jobject, jint show) {
     showBox = (int)show == 1 ;
     return 1;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_getMaxFace
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_getMaxFace
         (JNIEnv * env, jclass jobject, jint maxFace) {
     maxFace = (int)maxFace == 1 ;
     return 1;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_showLandMarks
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_showLandMarks
         (JNIEnv * env, jclass jobject, jint show) {
     showLine = (int)show == 1 ;
     return 1;
 }
+/*
+ * Class:     com_zzwtec_facedlibopencv_Face
+ * Method:    setFaceDownsampleRatio
+ * Signature: (F)F
+ */
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_setFaceDownsampleRatio
+        (JNIEnv * env, jclass jobject, jint faceDownsampleRatio){
+    FACE_DOWNSAMPLE_RATIO = faceDownsampleRatio;
+    return 1;
+}
 
-JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
+JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks2
         (JNIEnv * env, jclass jobject, jlong intPtr, jlong outPtr){
     string str = "Fail";
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
@@ -416,7 +429,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks2
     return env->NewStringUTF(ret);
 }
 
-JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
+JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks1
         (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ) {
     string str = "Fail";
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
@@ -466,7 +479,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks1
     return env->NewStringUTF(ret);
 }
 
-JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
+JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks
         (JNIEnv *env, jclass jobject, jlong rgbaAAddr, jlong grayAddr, jlong bgrAddr, jlong rgbAddr, jlong displayAddr ) {
     string str = "Fail";
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
@@ -537,7 +550,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_Face_landMarks
     return env->NewStringUTF(ret);
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetector
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceDetector
         (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ) {
     Mat& mSrc = *(Mat*) srcAAddr;
     int formatType = (int)format;
@@ -580,7 +593,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetector
     return 1;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceDetectorByDNN
         (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ) {
     Mat& mSrc = *(Mat*) srcAAddr;
     int formatType = (int)format;
@@ -645,7 +658,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceDetectorByDNN
     return 1;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPicture
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognitionForPicture
         (JNIEnv *, jclass, jlong srcAAddr, jlong displayAddr){
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
         LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
@@ -756,7 +769,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognitionForPic
     return found;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognition
         (JNIEnv *env, jclass jobject, jlong srcAAddr, jint format, jlong displayAddr ,jstring path){
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
         LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");
@@ -912,7 +925,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_faceRecognition
     return found;
 }
 
-JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_Face_initFaceDescriptors
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_initFaceDescriptors
         (JNIEnv *env, jclass jobject, jstring path){
     if(!initflag_faceLandmarks68 && !initflag_faceLandmarks5){
         LOGE("没有初始化 68点人脸标记模型 或 5点人脸标记模型");

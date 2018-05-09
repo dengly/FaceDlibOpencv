@@ -1,4 +1,4 @@
-package com.zzwtec.facedlibopencv;
+package com.zzwtec.facedlibopencv.face;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.hardware.Camera;
 import android.util.Log;
 
 import com.arcsoft.facedetection.AFD_FSDKEngine;
@@ -43,7 +44,15 @@ public class ArcFace {
     private static boolean initDB = false;
     private static final float myThreshold = 0.5f ; //人脸识别相似度值的决策阈值
 
-    private static final int FACE_DOWNSAMPLE_RATIO = 4;
+    public static float getMyThreshold() {
+        return myThreshold;
+    }
+
+    private static int FACE_DOWNSAMPLE_RATIO = 4;
+
+    public static void setFaceDownsampleRatio(int faceDownsampleRatio) {
+        FACE_DOWNSAMPLE_RATIO = faceDownsampleRatio;
+    }
 
     private FaceDB faceDB;
 
@@ -318,6 +327,7 @@ public class ArcFace {
 
         Rect maxRect = result_FD.get(0).getRect();
         int maxArea = maxRect.width() * maxRect.height();
+        int maxOri = result_FD.get(0).getDegree(); // 人脸角度
         for(int i=1; i < result_FD.size(); i++){
             AFD_FSDKFace item = result_FD.get(i);
             Rect itemRect = item.getRect();
@@ -325,6 +335,7 @@ public class ArcFace {
             if(maxArea < area){
                 maxArea = area;
                 maxRect = itemRect;
+                maxOri = item.getDegree();
             }
         }
 
@@ -333,7 +344,7 @@ public class ArcFace {
 
         //输入的data数据为NV21格式（如Camera里NV21格式的preview数据）；人脸坐标一般使用人脸检测返回的Rect传入；人脸角度请按照人脸检测引擎返回的值传入。
         long time = -System.nanoTime();
-        error_FR = engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, maxRect, AFR_FSDKEngine.AFR_FOC_0, face);
+        error_FR = engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, maxRect, maxOri, face);
         double _time1 = (System.nanoTime()+time) / 1000000.0;
         Log.i(TAG, "虹软 人脸特征提取 time: " + _time1 +" ms");
 
@@ -356,6 +367,76 @@ public class ArcFace {
             Log.i(TAG, "虹软 人脸特征比对 time: " + _time2 +" ms");
 
             Log.d(TAG, "Score:" + score.getScore());
+            if(score.getScore() > myThreshold){
+                Log.i(TAG, "虹软 总耗时: " + (_time0+_time1+_time2)+" ms ———— 一次人脸检测、一次人脸特征提取、一次人脸特征比对");
+                draw(mBitmap, displayBitmap, result_FD, faceDB.getTagList().get(i)+" threshold:"+score.getScore(), 0);
+                return score.getScore();
+            }
+        }
+        draw(mBitmap, displayBitmap, result_FD);
+        return 0;
+    }
+
+    /**
+     * 人脸识别
+     */
+    public float facerecognitionByDB(byte[] data, Camera.Size size, Bitmap mBitmap, Bitmap displayBitmap){
+        if(!initDB){
+            return 0;
+        }
+        int width = size.width;
+        int height = size.height;
+
+        // 用来存放检测到的人脸信息列表
+        List<AFD_FSDKFace> result_FD = new ArrayList<>();
+        AFR_FSDKError error_FR;
+        AFD_FSDKError error_FD;
+
+        long time0 = -System.nanoTime();
+        error_FD = engine_detection.AFD_FSDK_StillImageFaceDetection(data, width, height, AFD_FSDKEngine.CP_PAF_NV21, result_FD);
+        double _time0 = (System.nanoTime()+time0) / 1000000.0;
+        Log.i(TAG, "虹软 facedetection time: " + _time0 +" ms");
+        Log.d(TAG, "AFD_FSDK_StillImageFaceDetection=" + error_FD.getCode());
+
+        if(result_FD.size()<=0){
+            return 0;
+        }
+
+        Rect maxRect = result_FD.get(0).getRect();
+        int maxArea = maxRect.width() * maxRect.height();
+        int maxOri = result_FD.get(0).getDegree(); // 人脸角度
+        for(int i=1; i < result_FD.size(); i++){
+            AFD_FSDKFace item = result_FD.get(i);
+            Rect itemRect = item.getRect();
+            int area = itemRect.width() * itemRect.height();
+            if(maxArea < area){
+                maxArea = area;
+                maxRect = itemRect;
+                maxOri = item.getDegree();
+            }
+        }
+
+        //用来存放提取到的人脸信息, face_1是注册的人脸，face_2是要识别的人脸
+        AFR_FSDKFace face = new AFR_FSDKFace();
+
+        //输入的data数据为NV21格式（如Camera里NV21格式的preview数据）；人脸坐标一般使用人脸检测返回的Rect传入；人脸角度请按照人脸检测引擎返回的值传入。
+        long time = -System.nanoTime();
+        error_FR = engine_recognition.AFR_FSDK_ExtractFRFeature(data, width, height, AFR_FSDKEngine.CP_PAF_NV21, maxRect, maxOri, face);
+        double _time1 = (System.nanoTime()+time) / 1000000.0;
+        Log.i(TAG, "虹软 人脸特征提取 time: " + _time1 +" ms");
+
+        Log.d(TAG, "Face=" + face.getFeatureData()[0]+ "," + face.getFeatureData()[1] + "," + face.getFeatureData()[2] + "," + error_FR.getCode());
+
+        //score用于存放人脸对比的相似度值
+        AFR_FSDKMatching score = new AFR_FSDKMatching();
+        for(int i=0; i<faceDB.getFaceList().size(); i++ ){
+            AFR_FSDKFace item = faceDB.getFaceList().get(i);
+            time = -System.nanoTime();
+            error_FR = engine_recognition.AFR_FSDK_FacePairMatching(face, item, score);
+            double _time2 = (System.nanoTime()+time) / 1000000.0;
+            Log.i(TAG, "虹软 人脸特征比对 time: " + _time2 +" ms");
+
+            Log.i(TAG, "Score:" + score.getScore());
             if(score.getScore() > myThreshold){
                 Log.i(TAG, "虹软 总耗时: " + (_time0+_time1+_time2)+" ms ———— 一次人脸检测、一次人脸特征提取、一次人脸特征比对");
                 draw(mBitmap, displayBitmap, result_FD, faceDB.getTagList().get(i)+" threshold:"+score.getScore(), 0);

@@ -1,4 +1,4 @@
-package com.zzwtec.facedlibopencv;
+package com.zzwtec.facedlibopencv.activity;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -9,6 +9,11 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.zzwtec.facedlibopencv.jni.Face;
+import com.zzwtec.facedlibopencv.R;
+import com.zzwtec.facedlibopencv.face.ArcFace;
+import com.zzwtec.facedlibopencv.util.Constants;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;

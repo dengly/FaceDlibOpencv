@@ -13,6 +13,7 @@ import android.view.ViewGroup.LayoutParams;
 import org.opencv.BuildConfig;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
@@ -42,17 +43,6 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     protected JavaCameraFrame[] mCameraFrame; // 缓存帧
     private SurfaceTexture mSurfaceTexture;
     private int mPreviewFormat = ImageFormat.NV21;
-    private Integer displayDegree = null; // Rotation can only be 0, 90, 180 or 270.
-    private String mOrientation = null;
-
-    /**
-     * 旋转摄像头度数
-     * @param degree
-     */
-    public void setDisplayOrientation(int degree,String orientation){
-        displayDegree = degree;
-        mOrientation = orientation;
-    }
 
     public Camera getCamera(){
         return mCamera;
@@ -183,6 +173,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     mPreviewFormat = params.getPreviewFormat();
 
                     Log.d(TAG, "Set preview size to " + Integer.valueOf((int)frameSize.width) + "x" + Integer.valueOf((int)frameSize.height));
+
                     params.setPreviewSize((int)frameSize.width, (int)frameSize.height);
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && !android.os.Build.MODEL.equals("GT-I9100"))
@@ -194,11 +185,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
                     }
 
-                    if(displayDegree != null){
-                        mCamera.setDisplayOrientation(displayDegree);
-                        params.setRotation(displayDegree);
-                        params.set("orientation",mOrientation);
-                    }
+                    mCamera.setDisplayOrientation(cameraDisplayRotation);
+                    params.setRotation(cameraDisplayRotation);
 
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();
@@ -338,20 +326,33 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     }
 
     private class JavaCameraFrame implements CvCameraViewFrame {
+
+        private Mat rotateMat(Mat srcMat){
+            if(cameraDisplayRotation == 0){
+                return srcMat;
+            }
+            Point center =new Point(srcMat.cols()/2,srcMat.rows()/2);
+            Mat rotImage;
+            Mat dstMat = srcMat.clone();
+            rotImage = Imgproc.getRotationMatrix2D(center, cameraDisplayRotation, 1);
+            Imgproc.warpAffine(srcMat, dstMat, rotImage, srcMat.size());
+            return dstMat;
+        }
+
         @Override
         public Mat gray() {
-            return mYuvFrameData.submat(0, mHeight, 0, mWidth);
+            return rotateMat(mYuvFrameData.submat(0, mHeight, 0, mWidth));
         }
 
         @Override
         public Mat rgba() {
-            if (mPreviewFormat == ImageFormat.NV21)
+            if (mPreviewFormat == ImageFormat.NV21) {
                 Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGBA_NV21, 4);
-            else if (mPreviewFormat == ImageFormat.YV12)
+            }else if (mPreviewFormat == ImageFormat.YV12) {
                 Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGB_I420, 4);  // COLOR_YUV2RGBA_YV12 produces inverted colors
-            else
+            }else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
-            return mRgba;
+            return rotateMat(mRgba);
         }
 
         @Override
@@ -362,7 +363,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 Imgproc.cvtColor(mYuvFrameData, mBgr, Imgproc.COLOR_YUV2BGR_I420);  // COLOR_YUV2RGBA_YV12 produces inverted colors
             else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
-            return mBgr;
+            return rotateMat(mBgr);
         }
 
         @Override
@@ -373,7 +374,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 Imgproc.cvtColor(mYuvFrameData, mRgb, Imgproc.COLOR_YUV2RGB_I420);  // COLOR_YUV2RGBA_YV12 produces inverted colors
             else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
-            return mRgb;
+            return rotateMat(mRgb);
         }
 
         public JavaCameraFrame(Mat Yuv420sp, int width, int height) {

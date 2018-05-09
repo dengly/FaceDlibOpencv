@@ -1,4 +1,4 @@
-package com.zzwtec.facedlibopencv;
+package com.zzwtec.facedlibopencv.util;
 
 import android.content.Context;
 import android.support.annotation.NonNull;

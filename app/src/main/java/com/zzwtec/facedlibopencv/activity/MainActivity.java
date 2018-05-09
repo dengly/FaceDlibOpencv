@@ -1,4 +1,4 @@
-package com.zzwtec.facedlibopencv;
+package com.zzwtec.facedlibopencv.activity;
 
 import android.app.Activity;
 import android.content.Context;
@@ -9,6 +9,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import com.zzwtec.facedlibopencv.jni.Face;
+import com.zzwtec.facedlibopencv.R;
+
 import org.opencv.android.OpenCVLoader;
 
 public class MainActivity extends Activity {
@@ -17,6 +20,8 @@ public class MainActivity extends Activity {
     private Handler mHandler;
     private Boolean initflag = false;
     private static String TAG = "MainActivity";
+    private Class videoClass = VideoActivity.class;
+    private static int switchTag = 0;
 
     @Override
     public void onResume()
@@ -101,7 +106,7 @@ public class MainActivity extends Activity {
         videoBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
+                Intent intent = new Intent(mContext, videoClass);
                 intent.putExtra("type",1); // 人脸特征标记
                 startActivity(intent);
             }
@@ -111,7 +116,7 @@ public class MainActivity extends Activity {
         videoRecognitionBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
+                Intent intent = new Intent(mContext, videoClass);
                 intent.putExtra("type",2); // 同步人脸识别
                 startActivity(intent);
             }
@@ -121,7 +126,7 @@ public class MainActivity extends Activity {
         videoDetectorBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
+                Intent intent = new Intent(mContext, videoClass);
                 intent.putExtra("type",3); // 人脸检测
                 startActivity(intent);
             }
@@ -131,7 +136,7 @@ public class MainActivity extends Activity {
         videoDetectorDnnBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
+                Intent intent = new Intent(mContext, videoClass);
                 intent.putExtra("type",4); // 人脸检测 通过dnn
                 startActivity(intent);
             }
@@ -140,7 +145,7 @@ public class MainActivity extends Activity {
         videoRecognitionAsynBt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
+                Intent intent = new Intent(mContext, videoClass);
                 intent.putExtra("type",5); // 异步人脸识别
                 startActivity(intent);
             }
@@ -150,7 +155,7 @@ public class MainActivity extends Activity {
         video_arc_recognition_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
+                Intent intent = new Intent(mContext, videoClass);
                 intent.putExtra("type",6); // 虹软视频人脸同步识别
                 startActivity(intent);
             }
@@ -160,7 +165,7 @@ public class MainActivity extends Activity {
         video_arc_recognition_asyn_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, VideoActivity.class);
+                Intent intent = new Intent(mContext, videoClass);
                 intent.putExtra("type",7); // 虹软视频人脸异步识别
                 startActivity(intent);
             }

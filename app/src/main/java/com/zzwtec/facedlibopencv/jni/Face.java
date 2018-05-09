@@ -1,8 +1,11 @@
-package com.zzwtec.facedlibopencv;
+package com.zzwtec.facedlibopencv.jni;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
+
+import com.zzwtec.facedlibopencv.util.Constants;
+import com.zzwtec.facedlibopencv.util.FileUtils;
 
 import java.io.File;
 
@@ -14,6 +17,8 @@ public class Face {
      * @return
      */
     public native static int initModel(String modelpath, int type);
+
+    public native static int setFaceDownsampleRatio(int faceDownsampleRatio);
 
     //设置是否显示人脸框
     public native static int showBox(int show);

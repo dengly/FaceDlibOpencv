@@ -56,6 +56,14 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     public static final int RGBA = 1;
     public static final int GRAY = 2;
 
+    protected int cameraDisplayRotation = 0;
+    /**
+     * 摄像头度数
+     */
+    public void setCameraDisplayRotation(int cameraDisplayRotation){
+        this.cameraDisplayRotation = cameraDisplayRotation;
+    }
+
     public CameraBridgeViewBase(Context context, int cameraId) {
         super(context);
         mCameraIndex = cameraId;
@@ -424,6 +432,9 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         if (bmpValid && mCacheBitmap != null) {
             Canvas canvas = getHolder().lockCanvas();
             if (canvas != null) {
+//                if(cameraDisplayRotation!=0){
+//                    canvas.rotate(cameraDisplayRotation, mFrameWidth/2, mFrameHeight/2); // 有效
+//                }
                 canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
 
                 if (BuildConfig.DEBUG)

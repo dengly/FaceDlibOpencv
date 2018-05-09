@@ -1,4 +1,4 @@
-package com.zzwtec.facedlibopencv;
+package com.zzwtec.facedlibopencv.activity;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -14,6 +14,12 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.zzwtec.facedlibopencv.R;
+import com.zzwtec.facedlibopencv.face.ArcFace;
+import com.zzwtec.facedlibopencv.jni.Face;
+import com.zzwtec.facedlibopencv.util.CameraUtil;
+import com.zzwtec.facedlibopencv.util.Constants;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.JavaCameraView;
@@ -22,6 +28,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,7 +47,6 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
     private Mat mDisplay;
 
     private int mWidth, mHeight, type = 1;
-    private int click=0;
 
     private Bitmap mCacheBitmap;
     private Handler mHandler;
@@ -77,11 +83,30 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         mHandler =new Handler();
         imageView = (ImageView) findViewById(R.id.imageView);
         javaCameraView = (JavaCameraView) findViewById(R.id.javaCameraView);
-        javaCameraView.getLayoutParams().width=1280;
-        javaCameraView.getLayoutParams().height=960;
         javaCameraView.setVisibility(SurfaceView.VISIBLE);
-        javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
-//        javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK); // 设置打开后置摄像头
+        int cameraDisplayRotation = CameraUtil.getCameraDisplayRotation(VideoActivity.this);
+        javaCameraView.setCameraDisplayRotation(cameraDisplayRotation);
+        if(MyApplication.getCameraInfoMap().get(MyApplication.getCurrentCameraId()) == Camera.CameraInfo.CAMERA_FACING_FRONT){
+            javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
+        }else{
+            javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK); // 设置打开后置摄像头
+        }
+
+        Camera camera = Camera.open(MyApplication.getCurrentCameraId());
+        List<Camera.Size> rawSupportedSizes = camera.getParameters().getSupportedPreviewSizes();
+        int maxW = 0;
+        int maxH = 0;
+        for(Camera.Size item : rawSupportedSizes){
+            Log.i(TAG,"supportedSize width:"+item.width+" height:"+item.height);
+            if(item.width > maxW){
+                maxW = item.width;
+                maxH = item.height;
+            }
+        }
+        camera.release();
+        javaCameraView.getLayoutParams().width=maxW;
+        javaCameraView.getLayoutParams().height=maxH;
+
         javaCameraView.setCvCameraViewListener(this);
         javaCameraView.setClickable(true);
         javaCameraView.setOnClickListener(new View.OnClickListener() {
@@ -97,8 +122,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                click = (++click) % 2;
-                if(click==0){
+                MyApplication.switchCameraId();
+                if(MyApplication.getCameraInfoMap().get(MyApplication.getCurrentCameraId()) == Camera.CameraInfo.CAMERA_FACING_FRONT){
                     javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
                 }else{
                     javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK); // 设置打开后置摄像头
@@ -263,13 +288,22 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
             }else if(type == 6){ // 虹软视频人脸同步识别
                 mRgb = inputFrame.rgb();
                 Bitmap srcBitmap = Bitmap.createBitmap(mRgb.width(), mRgb.height(), Bitmap.Config.ARGB_8888);
-                Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+                final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
                 Utils.matToBitmap(mRgb,srcBitmap);
                 final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
                 if(score==0){
                     mDisplay = mRgb;
                 }else{
                     Utils.bitmapToMat(displayBitmap,mDisplay);
+                    if(score > 0.5f){
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                                imageView.setImageBitmap(displayBitmap);
+                            }
+                        });
+                    }
                 }
             }else if(type == 7){ // 虹软视频人脸异步识别
                 mRgb = inputFrame.rgb();
@@ -299,11 +333,19 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                     );
                 }
             }
-
             return mDisplay;
 
         }else{
-            return inputFrame.rgba();
+            mDisplay = inputFrame.rgba();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
+                    Utils.matToBitmap(mDisplay,srcBitmap);
+                    imageView.setImageBitmap(srcBitmap);
+                }
+            });
+            return mDisplay;
         }
     }
 
