@@ -255,6 +255,15 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 mRgb = inputFrame.rgb();
                 mDisplay = mRgb;
                 Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
+                        Utils.matToBitmap(mDisplay, srcBitmap);
+                        imageView.setImageBitmap(srcBitmap);
+                    }
+                });
             }else if(type == 5){ //异步人脸识别
                 mGray = inputFrame.gray();
                 mRgb = inputFrame.rgb();
@@ -318,7 +327,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                                     final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
                                     Utils.matToBitmap(mRgb,srcBitmap);
                                     final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                                    if(score > 0){
+                                    if(score > 0.5f){
                                         mHandler.post(new Runnable() {
                                             @Override
                                             public void run() {
