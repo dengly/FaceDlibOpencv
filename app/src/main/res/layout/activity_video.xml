@@ -18,6 +18,15 @@
         android:layout_gravity="right|bottom"
         android:text="切换摄像头"/>
 
+    <TextView
+        android:id="@+id/textDlib"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:textSize="24dp"
+        android:layout_gravity="right|top"
+        android:text="Dlib 人脸处理要注意屏幕方向和人脸方向一致" />
+
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="wrap_content"

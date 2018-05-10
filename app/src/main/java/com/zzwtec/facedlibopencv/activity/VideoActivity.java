@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.zzwtec.facedlibopencv.R;
@@ -35,6 +36,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
     private static String TAG = "VideoActivity";
 
     private Button button;
+    private TextView textView;
     private Camera mCamera;
 
     private Mat mRgba;
@@ -78,6 +80,8 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         imageView = (ImageView) findViewById(R.id.imageView);
         javaCameraView = (JavaCameraView) findViewById(R.id.javaCameraView);
         javaCameraView.setVisibility(SurfaceView.VISIBLE);
+        textView = (TextView) findViewById(R.id.textDlib);
+        textView.setVisibility(View.VISIBLE);
 
         int mOrientation = getWindowManager().getDefaultDisplay().getRotation();
 
@@ -138,6 +142,19 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                         mArcFace.setThreshold(MyApplication.getMyThreshold());
                     }
                     mArcFace.initDB(Constants.getFacePicDirectoryPath());
+                    runOnUiThread(new Runnable() {
+                                      @Override
+                                      public void run() {
+                                          textView.setVisibility(View.GONE);
+                                      }
+                                  });
+                }else{
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textView.setVisibility(View.VISIBLE);
+                        }
+                    });
                 }
             }
         });
@@ -261,23 +278,20 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 }
             }else if(type == 6){ // 虹软视频人脸同步识别
                 mRgba = inputFrame.rgba();
+                mDisplay = mRgba;
                 Bitmap srcBitmap = Bitmap.createBitmap(mRgba.width(), mRgba.height(), Bitmap.Config.ARGB_8888);
                 final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
                 Utils.matToBitmap(mRgba,srcBitmap);
                 float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                if(score==0){
-                    mDisplay = mRgba;
-                }else{
+                if(score > MyApplication.getMyThreshold()){
                     Utils.bitmapToMat(displayBitmap,mDisplay);
-                    if(score > MyApplication.getMyThreshold()){
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
-                                imageView.setImageBitmap(displayBitmap);
-                            }
-                        });
-                    }
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                            imageView.setImageBitmap(displayBitmap);
+                        }
+                    });
                 }
             }else if(type == 7){ // 虹软视频人脸异步识别
                 mRgba = inputFrame.rgba();
