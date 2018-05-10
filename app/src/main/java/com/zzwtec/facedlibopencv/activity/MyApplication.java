@@ -85,12 +85,10 @@ public class MyApplication extends Application {
 
         long windowArea = 1l * windowWidth * windowHeight;
         faceDownsampleRatio =
-                windowArea >= 8847360l ? 12 : // 4096 * 2160
-                windowArea >= 2073600l ? 6 : // 1920 * 1080
-                windowArea >= 1228800l ? 4 : // 1280 * 960
-                windowArea >= 691200l ? 3 : // 960 * 720
-                windowArea >= 307200l ? 2 : // 640 * 480
-                                        1;
+                windowArea >= 8847360l ? 6 : // 4096 * 2160
+                windowArea >= 2073600l ? 3 : // 1920 * 1080
+                windowArea >= 1228800l ? 2 : // 1280 * 960
+                1; // 1280 * 960 以下
         ArcFace.setFaceDownsampleRatio(faceDownsampleRatio);
         Face.setFaceDownsampleRatio(faceDownsampleRatio);
 
