@@ -50,6 +50,7 @@ using net_type = loss_mmod<con<1, 9, 9, 1, 1, rcon5<rcon5<rcon5<downsampler<inpu
 // ----------------------------------------------------------------------------------------
 
 frontal_face_detector detector = dlib::get_frontal_face_detector(); // 不使用 GPU ,依赖 CPU
+int detectorTimes = 0; // 上采样次数 dlib的人脸检测器只能检测80x80和更大的人脸，如果需要检测比它小的人脸，需要对图像上采样，一次上采样图像尺寸放大一倍
 shape_predictor pose_model;//shape_predictor的作用是：以图像的某块区域为输入，输出一系列的点（point location）以表示此图像region里object的姿势pose。所以，shape_predictor主要用于表示object的姿势
 
 net_type net_humanFace; // 用于人脸检测
@@ -150,7 +151,7 @@ int detector_face(matrix<T>& img, matrix<T>& img_small, Mat& mDisplay){
     int found = 0;
     start_detector = clock();
 
-    for (auto face_small_rectangle : detector(img_small, 1)){ //检测人脸，获得边界框
+    for (auto face_small_rectangle : detector(img_small, detectorTimes)){ //检测人脸，获得边界框
 //        if(face_small_rectangle.width() * face_small_rectangle.height() * FACE_DOWNSAMPLE_RATIO * FACE_DOWNSAMPLE_RATIO < 150 * 150){
 //            continue;
 //        }
@@ -216,7 +217,7 @@ int loadDB(const char * facesPath){
                         LOGI("文件名 %s",szFileName);
                         load_image(img, fileName);
 
-                        for (auto face : detector(img, 1)) {
+                        for (auto face : detector(img, detectorTimes)) {
                             auto shape = pose_model(img, face); // 一个人的人脸特征
                             matrix<rgb_pixel> face_chip;
                             extract_image_chip(img, get_face_chip_details(shape,150,0.25), face_chip);
@@ -367,7 +368,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks2
         cvtColor(outMat, result, CV_RGBA2BGR);
         assign_image(img, cv_image<bgr_pixel>(result));
 
-        std::vector<dlib::rectangle> dets = detector(img, 1);
+        std::vector<dlib::rectangle> dets = detector(img, detectorTimes);
 
         int Max = 0;
         int area = 0; // 获取最大面值的人脸
@@ -505,7 +506,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks
         matrix<rgb_pixel> img;
         assign_image(img, cv_image<rgb_pixel>(mRgb));
 
-        std::vector<dlib::rectangle> faces = detector(img, 1); //检测人脸，获得边界框
+        std::vector<dlib::rectangle> faces = detector(img, detectorTimes); //检测人脸，获得边界框
 
         LOGI("faces size:%d",faces.size());
 
@@ -691,7 +692,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognitionFo
         std::vector<matrix<rgb_pixel>> faces; // 人脸 裁剪后的人脸
 //        std::vector<full_object_detection> shapes; // 人脸特征
         std::vector<cv::Rect> boxes; // 人脸位置框
-        std::vector<dlib::rectangle> detector_faces = detector(img, 1);
+        std::vector<dlib::rectangle> detector_faces = detector(img, detectorTimes);
         for (auto face : detector_faces) { // 人脸检测
 //            if(face.width() * face.height() < 150 * 150){
 //                continue;
@@ -831,7 +832,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognition
 
         start_detector = clock();
 
-        std::vector<dlib::rectangle> detector_faces = detector(img_small, 1);
+        std::vector<dlib::rectangle> detector_faces = detector(img_small, detectorTimes);
 
         int Max = 0;
         if(maxFace){

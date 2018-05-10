@@ -8,6 +8,7 @@ import android.view.WindowManager;
 
 import com.zzwtec.facedlibopencv.face.ArcFace;
 import com.zzwtec.facedlibopencv.jni.Face;
+import com.zzwtec.facedlibopencv.util.Constants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +21,8 @@ public class MyApplication extends Application {
     private static Map<Integer,Integer> cameraInfoMap = new HashMap<>();
     private static float myThreshold = 0.56f; //人脸识别相似度值的决策阈值 值越大越像
     private static int faceDownsampleRatio=1; //图片压缩比
+
+    private static Boolean initflag = false;
 
     private static int windowWidth;
     private static int windowHeight;
@@ -50,6 +53,10 @@ public class MyApplication extends Application {
 
     public static int[] getCameraIds() {
         return cameraIds;
+    }
+
+    public static Boolean getInitflag() {
+        return initflag;
     }
 
     public static int getCurrentCameraId(){
@@ -100,6 +107,26 @@ public class MyApplication extends Application {
                 cameraIdIndex = i;
             }
         }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(!initflag){
+                    // FpsMeter: 5.20
+//                        Face.initModel(Constants.getFaceShape5ModelPath(),0);
+
+                    // FpsMeter: 4.7
+                    Face.initModel(Constants.getFaceShape68ModelPath(),1);
+
+                    Face.initModel(Constants.getHumanFaceModelPath(),2);
+                    Face.initModel(Constants.getFaceRecognitionV1ModelPath(),3);
+                    Face.initFaceDescriptors(Constants.getFacePicDirectoryPath());
+                    Face.getMaxFace(1);
+
+                    initflag = true;
+                }
+            }
+        }).start();
     }
 
     static {

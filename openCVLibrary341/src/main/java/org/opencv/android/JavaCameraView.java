@@ -311,7 +311,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     }
 
     @Override
-    public void onPreviewFrame(byte[] frame, Camera arg1) {
+    public void onPreviewFrame(byte[] frame, Camera camera) {
+        Camera.Size frameSize = camera.getParameters().getPictureSize();
         if (BuildConfig.DEBUG)
 //            Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
         synchronized (this) {
@@ -325,26 +326,33 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
     private class JavaCameraFrame implements CvCameraViewFrame {
 
+        // 转换图片矩阵
         private Mat rotateMat(Mat srcMat){
             int _cameraDisplayRotation = cameraDisplayRotation;
             if(mCameraIndex == CAMERA_ID_BACK){ // 后置摄像头
                 _cameraDisplayRotation = 180 + _cameraDisplayRotation;
             }
-            Point center =new Point(srcMat.cols()/2,srcMat.rows()/2);
-            Mat rotImage;
-            Mat dstMat = srcMat.clone();
-            rotImage = Imgproc.getRotationMatrix2D(center, _cameraDisplayRotation, 1); // 获取旋转矩阵 逆时针旋转。参数说明 center：表示旋转的中心点；angle：表示旋转的角度 ；scale：图像缩放因子
-            Imgproc.warpAffine(srcMat, dstMat, rotImage, srcMat.size()); // 实现坐标系仿射变换。参数说明 src: 输入源图像；dst: 输出图像；M: 仿射变换矩阵；dsize: 输出图像的尺寸
+            Point center = new Point(srcMat.cols()/2,srcMat.rows()/2);
+            Mat dstMat = srcMat;
+            Mat rotImage = Imgproc.getRotationMatrix2D(center, _cameraDisplayRotation, 1); // 获取旋转矩阵 逆时针旋转。参数说明 center：表示旋转的中心点；angle：表示旋转的角度 ；scale：图像缩放因子
+            Imgproc.warpAffine(srcMat, dstMat, rotImage, dstMat.size()); // 实现坐标系仿射变换。参数说明 src: 输入源图像；dst: 输出图像；M: 仿射变换矩阵；dsize: 输出图像的尺寸
             if(mCameraIndex == CAMERA_ID_FRONT){
                 Core.flip(dstMat,dstMat,1);//整理表示水平翻转，0表示垂直翻转，负数表示既有水平也有垂直翻转
             }
-            srcMat.release();
+            if(rotImage!=null)rotImage.release();
             return dstMat;
         }
 
         @Override
+        public Mat srcMat(){
+            return mYuvFrameData;
+        }
+
+        @Override
         public Mat gray() {
-            return rotateMat(mYuvFrameData.submat(0, mHeight, 0, mWidth));
+            Mat gray = mYuvFrameData.submat(0, mHeight, 0, mWidth);
+            gray = rotateMat(gray);
+            return gray;
         }
 
         @Override
@@ -355,7 +363,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 Imgproc.cvtColor(mYuvFrameData, mRgba, Imgproc.COLOR_YUV2RGB_I420, 4);  // COLOR_YUV2RGBA_YV12 produces inverted colors
             }else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
-            return rotateMat(mRgba);
+            mRgba = rotateMat(mRgba);
+            return mRgba;
         }
 
         @Override
@@ -366,7 +375,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 Imgproc.cvtColor(mYuvFrameData, mBgr, Imgproc.COLOR_YUV2BGR_I420);  // COLOR_YUV2RGBA_YV12 produces inverted colors
             else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
-            return rotateMat(mBgr);
+            mBgr = rotateMat(mBgr);
+            return mBgr;
         }
 
         @Override
@@ -377,7 +387,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 Imgproc.cvtColor(mYuvFrameData, mRgb, Imgproc.COLOR_YUV2RGB_I420);  // COLOR_YUV2RGBA_YV12 produces inverted colors
             else
                 throw new IllegalArgumentException("Preview Format can be NV21 or YV12");
-            return rotateMat(mRgb);
+            mRgb = rotateMat(mRgb);
+            return mRgb;
         }
 
         public JavaCameraFrame(Mat Yuv420sp, int width, int height) {

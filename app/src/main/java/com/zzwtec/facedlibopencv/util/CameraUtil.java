@@ -42,7 +42,6 @@ public class CameraUtil {
         return result;
     }
 
-
     public static int getCameraDisplayRotation(int rotation) {
         int cameraId = MyApplication.getCurrentCameraId() ;
         android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();

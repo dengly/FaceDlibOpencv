@@ -62,9 +62,9 @@ public class ArcFace {
         FACE_DOWNSAMPLE_RATIO = faceDownsampleRatio;
     }
 
-    private FaceDB faceDB;
+    private static FaceDB faceDB = new FaceDB();
 
-    class FaceDB{
+    static class FaceDB{
         private final List<AFR_FSDKFace> faceList ;
         private final List<String> tagList ;
 
@@ -89,7 +89,6 @@ public class ArcFace {
         engine_detection = new AFD_FSDKEngine();
         engine_recognition = new AFR_FSDKEngine();
         engine_tracking = new AFT_FSDKEngine();
-        faceDB = new FaceDB();
 
         //初始化人脸检测引擎，使用时请替换申请的APPID和SDKKEY
         AFD_FSDKError error_FD = engine_detection.AFD_FSDK_InitialFaceEngine(appid,sdkkey_FD, AFD_FSDKEngine.AFD_OPF_0_HIGHER_EXT, scale, maxFaceNum);
@@ -109,6 +108,9 @@ public class ArcFace {
      * @param path
      */
     public void initDB(String path){
+        if(initDB && faceDB.faceList !=null && faceDB.faceList.size() > 0){
+           return ;
+        }
         File root = new File(path);
         if(root.isDirectory()){
             File[] files = root.listFiles();
