@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 
 import org.opencv.BuildConfig;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -185,9 +186,6 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
                     }
 
-                    mCamera.setDisplayOrientation(cameraDisplayRotation);
-                    params.setRotation(cameraDisplayRotation);
-
                     mCamera.setParameters(params);
                     params = mCamera.getParameters();
 
@@ -328,14 +326,19 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     private class JavaCameraFrame implements CvCameraViewFrame {
 
         private Mat rotateMat(Mat srcMat){
-            if(cameraDisplayRotation == 0){
-                return srcMat;
+            int _cameraDisplayRotation = cameraDisplayRotation;
+            if(mCameraIndex == CAMERA_ID_BACK){ // 后置摄像头
+                _cameraDisplayRotation = 180 + _cameraDisplayRotation;
             }
             Point center =new Point(srcMat.cols()/2,srcMat.rows()/2);
             Mat rotImage;
             Mat dstMat = srcMat.clone();
-            rotImage = Imgproc.getRotationMatrix2D(center, cameraDisplayRotation, 1);
-            Imgproc.warpAffine(srcMat, dstMat, rotImage, srcMat.size());
+            rotImage = Imgproc.getRotationMatrix2D(center, _cameraDisplayRotation, 1); // 获取旋转矩阵 逆时针旋转。参数说明 center：表示旋转的中心点；angle：表示旋转的角度 ；scale：图像缩放因子
+            Imgproc.warpAffine(srcMat, dstMat, rotImage, srcMat.size()); // 实现坐标系仿射变换。参数说明 src: 输入源图像；dst: 输出图像；M: 仿射变换矩阵；dsize: 输出图像的尺寸
+            if(mCameraIndex == CAMERA_ID_FRONT){
+                Core.flip(dstMat,dstMat,1);//整理表示水平翻转，0表示垂直翻转，负数表示既有水平也有垂直翻转
+            }
+            srcMat.release();
             return dstMat;
         }
 

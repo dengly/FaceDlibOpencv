@@ -28,7 +28,6 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -48,7 +47,6 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
 
     private int mWidth, mHeight, type = 1;
 
-    private Bitmap mCacheBitmap;
     private Handler mHandler;
     private ImageView imageView;
 
@@ -80,32 +78,24 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         //保持屏幕常亮
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_video);
-        mHandler =new Handler();
         imageView = (ImageView) findViewById(R.id.imageView);
         javaCameraView = (JavaCameraView) findViewById(R.id.javaCameraView);
         javaCameraView.setVisibility(SurfaceView.VISIBLE);
-        int cameraDisplayRotation = CameraUtil.getCameraDisplayRotation(VideoActivity.this);
-        javaCameraView.setCameraDisplayRotation(cameraDisplayRotation);
+
+        int mOrientation = getWindowManager().getDefaultDisplay().getRotation();
+
+        ArcFace.setFaceDownsampleRatio(MyApplication.getFaceDownsampleRatio());
+        Face.setFaceDownsampleRatio(MyApplication.getFaceDownsampleRatio());
+
+        mHandler =new Handler();
+        javaCameraView.setCameraDisplayRotation(CameraUtil.getCameraDisplayRotation(mOrientation));
         if(MyApplication.getCameraInfoMap().get(MyApplication.getCurrentCameraId()) == Camera.CameraInfo.CAMERA_FACING_FRONT){
             javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_FRONT); // 设置打开前置摄像头
         }else{
             javaCameraView.setCameraIndex(CameraBridgeViewBase.CAMERA_ID_BACK); // 设置打开后置摄像头
         }
 
-        Camera camera = Camera.open(MyApplication.getCurrentCameraId());
-        List<Camera.Size> rawSupportedSizes = camera.getParameters().getSupportedPreviewSizes();
-        int maxW = 0;
-        int maxH = 0;
-        for(Camera.Size item : rawSupportedSizes){
-            Log.i(TAG,"supportedSize width:"+item.width+" height:"+item.height);
-            if(item.width > maxW){
-                maxW = item.width;
-                maxH = item.height;
-            }
-        }
-        camera.release();
-        javaCameraView.getLayoutParams().width=maxW;
-        javaCameraView.getLayoutParams().height=maxH;
+        javaCameraView.setMaxFrameSize(MyApplication.getWindowWidth(),MyApplication.getWindowHeight());
 
         javaCameraView.setCvCameraViewListener(this);
         javaCameraView.setClickable(true);

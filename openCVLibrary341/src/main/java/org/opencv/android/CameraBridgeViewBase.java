@@ -63,6 +63,9 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     public void setCameraDisplayRotation(int cameraDisplayRotation){
         this.cameraDisplayRotation = cameraDisplayRotation;
     }
+    public int getCameraDisplayRotation(){
+        return this.cameraDisplayRotation;
+    }
 
     public CameraBridgeViewBase(Context context, int cameraId) {
         super(context);
@@ -493,6 +496,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
      * This helper method can be called by subclasses to select camera preview size.
      * It goes over the list of the supported preview sizes and selects the maximum one which
      * fits both values set via setMaxFrameSize() and surface frame allocated for this view
+     * 根据最大帧和摄像头支持的帧来选择适合的帧
      * @param supportedSizes
      * @param surfaceWidth
      * @param surfaceHeight

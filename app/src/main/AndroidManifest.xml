@@ -31,6 +31,7 @@
 
         <activity
             android:name=".activity.VideoActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" >
         </activity>
 
