@@ -42,8 +42,16 @@ public class ArcFace {
     private static final String sdkkey_FT = "5wbN6JiVkfkYYRisexnXfV2UoVz959C5wk3WS2jgpGBf";
 
     private static boolean initDB = false;
-    private static final float myThreshold = 0.5f ; //人脸识别相似度值的决策阈值
+    private static float myThreshold = 0.5f ; //人脸识别相似度值的决策阈值 值越大越像
 
+    /**
+     * 设置人脸识别相似度值的决策阈值 值越大越像 取值在0到1间
+     * @param myThreshold
+     */
+    public static void setThreshold(float myThreshold) {
+        if(myThreshold<0 || myThreshold>1)return ;
+        ArcFace.myThreshold = myThreshold;
+    }
     public static float getMyThreshold() {
         return myThreshold;
     }

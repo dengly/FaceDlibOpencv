@@ -64,7 +64,7 @@ bool showBox = true; // 是否显示人脸框
 bool showLine = false; // 是否显示人脸特征线
 bool maxFace = false; // 是否只对最大的人脸做识别
 bool useCNN = false; // 是否使用卷积神经网络（CNN）
-float myThreshold = 0.5 ; //人脸识别的决策阈值
+float myThreshold = 0.5 ; //人脸识别的决策阈值 值越小越像
 
 int checkFace = 0;
 
@@ -326,14 +326,16 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_showLandMarks
     showLine = (int)show == 1 ;
     return 1;
 }
-/*
- * Class:     com_zzwtec_facedlibopencv_Face
- * Method:    setFaceDownsampleRatio
- * Signature: (F)F
- */
+
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_setFaceDownsampleRatio
         (JNIEnv * env, jclass jobject, jint faceDownsampleRatio){
     FACE_DOWNSAMPLE_RATIO = faceDownsampleRatio;
+    return 1;
+}
+
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_setMyThreshold
+        (JNIEnv * env, jclass jobject, jfloat threshold){
+    myThreshold = threshold;
     return 1;
 }
 

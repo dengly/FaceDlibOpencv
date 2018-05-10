@@ -16,6 +16,11 @@ public class MyApplication extends Application {
     private static int cameraIdIndex=0;
     private static int[] cameraIds;
     private static Map<Integer,Integer> cameraInfoMap = new HashMap<>();
+    private static float myThreshold = 0.56f; //人脸识别相似度值的决策阈值 值越大越像
+
+    public static float getMyThreshold() {
+        return myThreshold;
+    }
 
     public static int getCameraIdIndex() {
         return cameraIdIndex;

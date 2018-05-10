@@ -58,6 +58,8 @@ public class ImageActivity extends Activity {
         if (intent != null) {
             type = intent.getIntExtra("type",1);
         }
+
+        Face.setThreshold(MyApplication.getMyThreshold());
         if(type == 1){ // 人脸检测并标记特征点
             callFaceLandmark();
         }else if(type == 2){ // 人脸识别
@@ -82,6 +84,7 @@ public class ImageActivity extends Activity {
             public void run() {
                 if(mArcFace == null){
                     mArcFace = new ArcFace(16,2);
+                    mArcFace.setThreshold(MyApplication.getMyThreshold());
                 }
                 if(srcBitmap==null){
                     srcBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.test);

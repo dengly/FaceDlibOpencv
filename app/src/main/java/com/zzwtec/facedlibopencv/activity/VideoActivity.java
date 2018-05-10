@@ -142,6 +142,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                 initflag = false;
             }
         }
+        Face.setThreshold(MyApplication.getMyThreshold());
 
         singleThreadExecutor.execute(new Runnable() {
             @Override
@@ -167,6 +168,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                     }else if(type == 6 || type == 7){ // 虹软视频人脸同步识别  虹软视频人脸异步识别
                         if(mArcFace==null){
                             mArcFace = new ArcFace(16,1);
+                            mArcFace.setThreshold(MyApplication.getMyThreshold());
                         }
                         mArcFace.initDB(Constants.getFacePicDirectoryPath());
                     }
@@ -306,7 +308,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                     mDisplay = mRgb;
                 }else{
                     Utils.bitmapToMat(displayBitmap,mDisplay);
-                    if(score > 0.5f){
+                    if(score > MyApplication.getMyThreshold()){
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -329,7 +331,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                                     final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
                                     Utils.matToBitmap(mRgb,srcBitmap);
                                     final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                                    if(score > 0.5f){
+                                    if(score > MyApplication.getMyThreshold()){
                                         mHandler.post(new Runnable() {
                                             @Override
                                             public void run() {

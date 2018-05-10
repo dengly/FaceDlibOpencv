@@ -29,6 +29,15 @@ public class Face {
     //设置是否只对最大的人脸做识别
     public native static int getMaxFace(int maxFace);
 
+    //设置人脸识别的决策阈值 值越小越像
+    private native static int setMyThreshold(float myThreshold);
+
+    //设置人脸识别的决策阈值 值越大越像 取值在0到1间
+    public static void setThreshold(float myThreshold){
+        if(myThreshold<0 || myThreshold>1)return ;
+        setMyThreshold(1.0f - myThreshold);
+    }
+
     //人脸特征标记
     public native static String landMarks(long rgbaAAddr, long grayAddr, long bgrAddr, long rgbAddr, long displayAddr);
 

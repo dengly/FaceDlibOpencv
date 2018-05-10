@@ -19,7 +19,7 @@ extern "C" {
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    initModel
- * Signature: (Ljava/lang/String;F)F
+ * Signature: (Ljava/lang/String;I)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_initModel
         (JNIEnv *, jclass, jstring, jint);
@@ -27,7 +27,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_initModel
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    getMaxFace
- * Signature: (F)F
+ * Signature: (I)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_getMaxFace
         (JNIEnv *, jclass, jint);
@@ -35,7 +35,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_getMaxFace
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    showBox
- * Signature: (F)F
+ * Signature: (I)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_showBox
         (JNIEnv *, jclass, jint);
@@ -43,15 +43,23 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_showBox
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    setFaceDownsampleRatio
- * Signature: (F)F
+ * Signature: (I)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_setFaceDownsampleRatio
         (JNIEnv *, jclass, jint);
 
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
+ * Method:    setMyThreshold
+ * Signature: (F)I
+ */
+JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_setMyThreshold
+        (JNIEnv *, jclass, jfloat);
+
+/*
+ * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    showLandMarks
- * Signature: (F)F
+ * Signature: (I)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_showLandMarks
         (JNIEnv *, jclass, jint);
@@ -67,7 +75,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    landMarks
- * Signature: (JFJ)Ljava/lang/String;
+ * Signature: (JIJ)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks1
         (JNIEnv *, jclass, jlong, jint, jlong );
@@ -83,7 +91,7 @@ JNIEXPORT jstring JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_landMarks2
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    faceDetector
- * Signature: (JFJ)Ljava/lang/String;
+ * Signature: (JIJ)Ljava/lang/String;
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceDetector
         (JNIEnv *, jclass, jlong, jint, jlong );
@@ -91,7 +99,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceDetector
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    faceDetectorByDNN
- * Signature: (JFJ)Ljava/lang/String;
+ * Signature: (JIJ)Ljava/lang/String;
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceDetectorByDNN
         (JNIEnv *, jclass, jlong, jint, jlong );
@@ -99,7 +107,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceDetectorByDNN
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    faceRecognitionForPicture
- * Signature: (JJ)F
+ * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognitionForPicture
         (JNIEnv *, jclass, jlong, jlong );
@@ -107,7 +115,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognitionFo
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    faceRecognition
- * Signature: (JFJLjava/lang/String;)F
+ * Signature: (JIJLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognition
         (JNIEnv *, jclass, jlong, jint, jlong, jstring);
@@ -115,7 +123,7 @@ JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_faceRecognition
 /*
  * Class:     com_zzwtec_facedlibopencv_Face
  * Method:    initFaceDescriptors
- * Signature: (Ljava/lang/String;)F
+ * Signature: (Ljava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_com_zzwtec_facedlibopencv_jni_Face_initFaceDescriptors
         (JNIEnv *, jclass, jstring);
