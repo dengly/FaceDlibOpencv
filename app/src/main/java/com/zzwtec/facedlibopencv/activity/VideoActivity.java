@@ -2,8 +2,10 @@ package com.zzwtec.facedlibopencv.activity;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.RectF;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.os.Trace;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.SurfaceView;
@@ -16,9 +18,12 @@ import android.widget.Toast;
 
 import com.zzwtec.facedlibopencv.R;
 import com.zzwtec.facedlibopencv.face.ArcFace;
+import com.zzwtec.facedlibopencv.face.TensorFlow;
+import com.zzwtec.facedlibopencv.face.TensorFlowRecognition;
 import com.zzwtec.facedlibopencv.jni.Face;
 import com.zzwtec.facedlibopencv.util.CameraUtil;
 import com.zzwtec.facedlibopencv.util.Constants;
+import com.zzwtec.facedlibopencv.util.ImageUtil;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -28,6 +33,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,7 +51,7 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
     private Mat mBgr;
     private Mat mDisplay;
 
-    private int mWidth, mHeight, type = 1;
+    private int mWidth=0, mHeight=0, type = 1;
 
     private ImageView imageView;
 
@@ -70,6 +76,11 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
             }
         }
     };
+
+
+    private static final String TF_MODEL_FILE = "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
+    private static final String TF_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
+    private TensorFlow mTensorFlow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,6 +159,15 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
                                           textView.setVisibility(View.GONE);
                                       }
                                   });
+                }else if(type == 8){ // TensorFlow视频同步物体识别
+                    mTensorFlow = TensorFlow.create(getAssets(),TF_MODEL_FILE,TF_LABELS_FILE);
+                    mTensorFlow.enableStatLogging(true);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textView.setVisibility(View.GONE);
+                        }
+                    });
                 }else{
                     runOnUiThread(new Runnable() {
                         @Override
@@ -165,6 +185,9 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         super.onDestroy();
         if(mArcFace != null){
             mArcFace.destroy();
+        }
+        if(mTensorFlow!=null){
+            mTensorFlow.close();
         }
     }
 
@@ -212,120 +235,14 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
         Log.d(TAG, "VideoActivity onCameraFrame");
 
         if(MyApplication.getInitflag()){
-            if(type == 1){ // 人脸特征标记
-                // FpsMeter: 4.89
-                mRgba = inputFrame.rgba();
-                mGray = inputFrame.gray();
-                mDisplay = mRgba;
-                Face.landMarks1(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
-            }else if(type == 3){ // 人脸检测
-                mRgb = inputFrame.rgb();
-                mGray = inputFrame.gray();
-                mDisplay = mRgb;
-                Face.faceDetector(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
-            }else if(type == 4){ // 人脸检测 通过dnn
-                mRgb = inputFrame.rgb();
-                mGray = inputFrame.gray();
-                mDisplay = mRgb;
-                Face.faceDetectorByDNN(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
-            }else if(type == 2 ){ // 同步人脸识别
-                mRgb = inputFrame.rgb();
-                mGray = inputFrame.gray();
-                mDisplay = mRgb;
-                int re = Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
-                final Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
-                Utils.matToBitmap(mDisplay, srcBitmap);
-                if(re>0){
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
-                            imageView.setImageBitmap(srcBitmap);
-                        }
-                    });
-                }
-            }else if(type == 5){ //异步人脸识别
-                mRgb = inputFrame.rgb();
-                mGray = inputFrame.gray();
-                mDisplay = mRgb;
-
-                if(!check){
-                    final Mat gray = mGray.clone();
-                    final Mat display = mDisplay.clone();
-                    check = true;
-                    singleThreadExecutor.execute(
-                            new Runnable() {
-                                @Override
-                                public void run() {
-                                    int re = Face.faceRecognition(gray.getNativeObjAddr(),3,display.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
-                                    final Bitmap srcBitmap = Bitmap.createBitmap(display.width(), display.height(), Bitmap.Config.ARGB_8888);
-                                    Utils.matToBitmap(display, srcBitmap);
-                                    gray.release();
-                                    display.release();
-                                    if(re>0){
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
-                                                imageView.setImageBitmap(srcBitmap);
-                                            }
-                                        });
-                                    }
-                                    check = false;
-                                }
-                            }
-                    );
-                }
-            }else if(type == 6){ // 虹软视频人脸同步识别
-                mRgba = inputFrame.rgba();
-                mDisplay = mRgba;
-                Bitmap srcBitmap = Bitmap.createBitmap(mRgba.width(), mRgba.height(), Bitmap.Config.ARGB_8888);
-                final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
-                Utils.matToBitmap(mRgba,srcBitmap);
-                float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                if(score > MyApplication.getMyThreshold()){
-                    Utils.bitmapToMat(displayBitmap,mDisplay);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
-                            imageView.setImageBitmap(displayBitmap);
-                        }
-                    });
-                }
-            }else if(type == 7){ // 虹软视频人脸异步识别
-                mRgba = inputFrame.rgba();
-                mDisplay = mRgba;
-
-                if(!check){
-                    final Mat rgba = mRgba.clone();
-                    check = true;
-                    singleThreadExecutor.execute(
-                            new Runnable() {
-                                @Override
-                                public void run() {
-                                    final Bitmap srcBitmap = Bitmap.createBitmap(rgba.width(), rgba.height(), Bitmap.Config.ARGB_8888);
-                                    final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
-                                    Utils.matToBitmap(rgba,srcBitmap);
-                                    rgba.release();
-                                    final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
-                                    if(score > MyApplication.getMyThreshold()){
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
-                                                imageView.setImageBitmap(displayBitmap);
-                                            }
-                                        });
-                                    }
-                                    check = false;
-                                }
-                            }
-                    );
-                }
+            if(type >= 1 && type <= 5){ // dlib
+                mDisplay = DlibProcess(inputFrame);
+            }else if(type >= 6 && type <= 7){ // 虹软
+                mDisplay = ArcFaceProcess(inputFrame);
+            }else if(type == 8){ // TensorFlow
+                mDisplay = TensorFlowProcess(inputFrame);
             }
             return mDisplay;
-
         }else{
             mRgba = inputFrame.rgba();
             final Bitmap srcBitmap = Bitmap.createBitmap(mRgba.width(), mRgba.height(), Bitmap.Config.ARGB_8888);
@@ -338,6 +255,191 @@ public class VideoActivity extends AppCompatActivity implements CameraBridgeView
             });
             return mRgba;
         }
+    }
+
+    // TensorFlow
+    private Mat TensorFlowProcess(CameraBridgeViewBase.CvCameraViewFrame inputFrame){
+        if(type == 8){ // TensorFlow视频同步物体识别
+            mRgb = inputFrame.rgb();
+            if(mTensorFlow!=null){
+                if(mTensorFlow.isInitFlags()){
+                    Bitmap srcBitmap = Bitmap.createBitmap(mRgb.width(), mRgb.height(), Bitmap.Config.ARGB_8888);
+                    final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+                    Utils.matToBitmap(mRgb,srcBitmap);
+                    Bitmap smallBitmap = srcBitmap; // 缩小图片
+                    if(MyApplication.getFaceDownsampleRatio() != 1){
+                        smallBitmap = ImageUtil.scaleBitmap(srcBitmap,1.0f / MyApplication.getFaceDownsampleRatio()); // 缩小图片
+                    }
+                    long startTime = -System.nanoTime();
+                    List<TensorFlowRecognition> list = mTensorFlow.recognizeImage(smallBitmap);
+                    double _time = (System.nanoTime()+startTime) / 1000000.0;
+                    Log.i(TAG, "TensorFlow视频同步物体识别 time: " + _time +" ms");
+                    if(list!=null && list.size()>0) {
+                        int scale = MyApplication.getFaceDownsampleRatio();
+                        if(scale!=1){
+                            for(TensorFlowRecognition item : list){
+                                RectF temp = item.getLocation();
+                                temp.top = temp.top * scale;
+                                temp.left = temp.left * scale;
+                                temp.right = temp.right * scale;
+                                temp.bottom = temp.bottom * scale;
+                                item.setLocation(temp);
+                            }
+                        }
+                        mTensorFlow.draw(srcBitmap,displayBitmap,list);
+                        Utils.bitmapToMat(displayBitmap,mDisplay);
+                    }else{
+                        mDisplay = mRgb;
+                    }
+                }else {
+                    if(mWidth!=0){
+                        if(MyApplication.getFaceDownsampleRatio() != 1){
+                            mTensorFlow.initBuffers(mWidth / MyApplication.getFaceDownsampleRatio(), mHeight / MyApplication.getFaceDownsampleRatio());
+                        }else{
+                            mTensorFlow.initBuffers(mWidth, mHeight);
+                        }
+                    }
+                    mDisplay = mRgb;
+                }
+            }else{
+                mDisplay = mRgba;
+            }
+        }
+        return mDisplay;
+    }
+
+    // dlib
+    private Mat DlibProcess(CameraBridgeViewBase.CvCameraViewFrame inputFrame){
+        if(type == 1){ // 人脸特征标记
+            // FpsMeter: 4.89
+
+            Trace.beginSection("Face.landMarks1");
+            mRgba = inputFrame.rgba();
+            mGray = inputFrame.gray();
+            mDisplay = mRgba;
+            Face.landMarks1(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+            Trace.endSection();
+        }else if(type == 3){ // 人脸检测
+            Trace.beginSection("Face.faceDetector");
+            mRgb = inputFrame.rgb();
+            mGray = inputFrame.gray();
+            mDisplay = mRgb;
+            Face.faceDetector(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+            Trace.endSection();
+        }else if(type == 4){ // 人脸检测 通过dnn
+            Trace.beginSection("Face.faceDetectorByDNN");
+            mRgb = inputFrame.rgb();
+            mGray = inputFrame.gray();
+            mDisplay = mRgb;
+            Face.faceDetectorByDNN(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr());
+            Trace.endSection();
+        }else if(type == 2 ){ // 同步人脸识别
+            Trace.beginSection("Face.faceRecognition");
+            mRgb = inputFrame.rgb();
+            mGray = inputFrame.gray();
+            mDisplay = mRgb;
+            int re = Face.faceRecognition(mGray.getNativeObjAddr(),3,mDisplay.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+            final Bitmap srcBitmap = Bitmap.createBitmap(mDisplay.width(), mDisplay.height(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(mDisplay, srcBitmap);
+            Trace.endSection();
+            if(re>0){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                        imageView.setImageBitmap(srcBitmap);
+                    }
+                });
+            }
+        }else if(type == 5){ //异步人脸识别
+            mRgb = inputFrame.rgb();
+            mGray = inputFrame.gray();
+            mDisplay = mRgb;
+
+            if(!check){
+                final Mat gray = mGray.clone();
+                final Mat display = mDisplay.clone();
+                check = true;
+                singleThreadExecutor.execute(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                int re = Face.faceRecognition(gray.getNativeObjAddr(),3,display.getNativeObjAddr(),Constants.getFacePicDirectoryPath());
+                                final Bitmap srcBitmap = Bitmap.createBitmap(display.width(), display.height(), Bitmap.Config.ARGB_8888);
+                                Utils.matToBitmap(display, srcBitmap);
+                                gray.release();
+                                display.release();
+                                if(re>0){
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                                            imageView.setImageBitmap(srcBitmap);
+                                        }
+                                    });
+                                }
+                                check = false;
+                            }
+                        }
+                );
+            }
+        }
+        return mDisplay;
+    }
+
+    // 虹软
+    private Mat ArcFaceProcess(CameraBridgeViewBase.CvCameraViewFrame inputFrame){
+        if(type == 6){ // 虹软视频人脸同步识别
+            Trace.beginSection("ArcFace.facerecognitionByDB");
+            mRgba = inputFrame.rgba();
+            mDisplay = mRgba;
+            Bitmap srcBitmap = Bitmap.createBitmap(mRgba.width(), mRgba.height(), Bitmap.Config.ARGB_8888);
+            final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+            Utils.matToBitmap(mRgba,srcBitmap);
+            float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
+            Trace.endSection();
+            if(score > MyApplication.getMyThreshold()){
+                Utils.bitmapToMat(displayBitmap,mDisplay);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                        imageView.setImageBitmap(displayBitmap);
+                    }
+                });
+            }
+        }else if(type == 7){ // 虹软视频人脸异步识别
+            mRgba = inputFrame.rgba();
+            mDisplay = mRgba;
+
+            if(!check){
+                final Mat rgba = mRgba.clone();
+                check = true;
+                singleThreadExecutor.execute(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                final Bitmap srcBitmap = Bitmap.createBitmap(rgba.width(), rgba.height(), Bitmap.Config.ARGB_8888);
+                                final Bitmap displayBitmap = Bitmap.createBitmap(srcBitmap.getWidth(), srcBitmap.getHeight(), srcBitmap.getConfig()); //建立一个空的BItMap
+                                Utils.matToBitmap(rgba,srcBitmap);
+                                rgba.release();
+                                final float score = mArcFace.facerecognitionByDB(srcBitmap,displayBitmap);
+                                if(score > MyApplication.getMyThreshold()){
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(getApplicationContext(),"找到匹配的人",Toast.LENGTH_LONG);
+                                            imageView.setImageBitmap(displayBitmap);
+                                        }
+                                    });
+                                }
+                                check = false;
+                            }
+                        }
+                );
+            }
+        }
+        return mDisplay;
     }
 
     // Used to load the 'native-lib' library on application startup.

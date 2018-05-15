@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.zzwtec.facedlibopencv"
-        minSdkVersion 15
+        minSdkVersion 18
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -19,7 +19,7 @@ android {
             }
         }
         ndk{
-            abiFilters 'armeabi-v7a', 'armeabi'
+            abiFilters 'armeabi-v7a'
         }
     }
     buildTypes {
@@ -62,4 +62,5 @@ dependencies {
     implementation files('libs/facerecognition.jar')
     implementation files('libs/facetracking.jar')
     implementation 'com.guo.android_extend:android-extend:1.0.1'
+    implementation 'org.tensorflow:tensorflow-android:+'
 }

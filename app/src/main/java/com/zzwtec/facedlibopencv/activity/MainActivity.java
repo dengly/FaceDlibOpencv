@@ -16,7 +16,10 @@ import org.opencv.android.OpenCVLoader;
 
 public class MainActivity extends Activity {
 
-    private Button bt, recognitionbt, videoBt, videoRecognitionBt, videoDetectorBt, videoDetectorDnnBt, videoRecognitionAsynBt, arcRecognition_button, video_arc_recognition_button, video_arc_recognition_asyn_button;
+    private Button bt, recognitionbt, videoBt, videoRecognitionBt,
+            videoDetectorBt, videoDetectorDnnBt, videoRecognitionAsynBt,
+            arcRecognition_button, video_arc_recognition_button,
+            video_arc_recognition_asyn_button, video_TF_obj_recognition_button;
     private Handler mHandler;
     private Boolean initflag = false;
     private static String TAG = "MainActivity";
@@ -171,5 +174,14 @@ public class MainActivity extends Activity {
             }
         });
 
+        video_TF_obj_recognition_button = (Button) findViewById(R.id.video_TF_obj_recognition_button);
+        video_TF_obj_recognition_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, videoClass);
+                intent.putExtra("type",8); // TensorFlow视频同步物体识别
+                startActivity(intent);
+            }
+        });
     }
 }

@@ -21,6 +21,7 @@ import com.arcsoft.facetracking.AFT_FSDKEngine;
 import com.arcsoft.facetracking.AFT_FSDKError;
 import com.arcsoft.facetracking.AFT_FSDKFace;
 import com.guo.android_extend.image.ImageConverter;
+import com.zzwtec.facedlibopencv.util.ImageUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -280,30 +281,6 @@ public class ArcFace {
     }
 
     /**
-     * 缩放图
-     * @param mBitmap
-     * @param scale
-     * @return
-     */
-    private Bitmap scaleBitmap(Bitmap mBitmap,float scale){
-        // 获得图片的宽高
-        int width = mBitmap.getWidth();
-        int height = mBitmap.getHeight();
-        // 设置想要的大小
-        float newWidth = width * scale;
-        float newHeight = height * scale;
-        // 计算缩放比例
-        float scaleWidth = ((float) newWidth) / width;
-        float scaleHeight = ((float) newHeight) / height;
-        // 取得想要缩放的matrix参数
-        Matrix matrix = new Matrix();
-        matrix.postScale(scaleWidth, scaleHeight);
-        // 得到新的图片
-        return Bitmap.createBitmap(mBitmap, 0, 0, width, height, matrix,
-                true);
-    }
-
-    /**
      * 人脸识别
      */
     public float facerecognitionByDB(Bitmap mBitmap, Bitmap displayBitmap){
@@ -313,7 +290,7 @@ public class ArcFace {
         }
         Bitmap smallBitmap = mBitmap; // 缩小图片
         if(FACE_DOWNSAMPLE_RATIO!=1){
-            smallBitmap = scaleBitmap(mBitmap,1.0f/FACE_DOWNSAMPLE_RATIO); // 缩小图片
+            smallBitmap = ImageUtil.scaleBitmap(mBitmap,1.0f/FACE_DOWNSAMPLE_RATIO); // 缩小图片
         }
         byte[] data = getBitmapData(smallBitmap);
         int width = smallBitmap.getWidth();

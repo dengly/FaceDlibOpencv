@@ -64,4 +64,10 @@
         android:layout_height="wrap_content"
         android:text="虹软视频人脸异步识别"/>
 
+    <Button
+        android:id="@+id/video_TF_obj_recognition_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TensorFlow视频同步物体识别"/>
+
 </LinearLayout>

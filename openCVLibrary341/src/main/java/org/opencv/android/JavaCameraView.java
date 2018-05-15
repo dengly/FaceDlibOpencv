@@ -329,9 +329,9 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
         // 转换图片矩阵
         private Mat rotateMat(Mat srcMat){
             int _cameraDisplayRotation = cameraDisplayRotation;
-            if(mCameraIndex == CAMERA_ID_BACK){ // 后置摄像头
-                _cameraDisplayRotation = 180 + _cameraDisplayRotation;
-            }
+//            if(mCameraIndex == CAMERA_ID_BACK){ // 后置摄像头
+//                _cameraDisplayRotation = 180 + _cameraDisplayRotation;
+//            }
             Point center = new Point(srcMat.cols()/2,srcMat.rows()/2);
             Mat dstMat = srcMat;
             Mat rotImage = Imgproc.getRotationMatrix2D(center, _cameraDisplayRotation, 1); // 获取旋转矩阵 逆时针旋转。参数说明 center：表示旋转的中心点；angle：表示旋转的角度 ；scale：图像缩放因子
